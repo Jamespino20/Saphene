@@ -1,0 +1,44 @@
+name: Saphene Review
+
+on:
+  pull_request:
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install
+        run: npm install
+
+      - name: Clone verification targets
+        run: |
+          mkdir -p targets
+          git clone --depth 1 https://github.com/Jamespino20/matriflow.git targets/matriflow
+          git clone --depth 1 https://github.com/Jamespino20/AnvilOS.git targets/anvilos
+
+      - name: Review MatriFlow claims
+        run: npm run review -- --claims examples/matriflow-claims.md --repo targets/matriflow --ledger .saphene/matriflow.ledger.json | tee review-matriflow.md
+
+      - name: Review AnvilOS claims
+        run: npm run review -- --claims examples/anvilos-claims.md --repo targets/anvilos --ledger .saphene/anvilos.ledger.json | tee review-anvilos.md
+
+      - name: Post PR comment
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            'cat' review-matriflow.md 2>/dev/null
+            echo
+            'cat' review-anvilos.md 2>/dev/null
+          } > review-combined.md
+          gh pr comment ${{ github.event.number }} --body-file review-combined.md

@@ -9,6 +9,7 @@
     "bridge": "tsx src/cli.ts bridge",
     "memory": "tsx src/cli.ts memory",
     "mcp": "tsx src/mcp.ts",
+    "review": "tsx src/review.ts",
     "drift": "tsx src/drift-harness.ts",
     "typecheck": "tsc --noEmit"
   },
