@@ -1,0 +1,61 @@
+name: Saphene
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install
+        run: npm install
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Clone verification targets
+        run: |
+          mkdir -p targets
+          git clone --depth 1 https://github.com/Jamespino20/matriflow.git targets/matriflow
+          git clone --depth 1 https://github.com/Jamespino20/AnvilOS.git targets/anvilos
+
+      - name: Configure model (optional)
+        env:
+          SAPHENE_API_KEY: ${{ secrets.SAPHENE_API_KEY }}
+        run: |
+          if [ -n "$SAPHENE_API_KEY" ]; then
+            printf 'MODEL_BASE_URL=%s\nMODEL_API_KEY=%s\nMODEL_NAME=%s\nMODEL_FALLBACK=%s\n' \
+              "https://generativelanguage.googleapis.com/v1beta/openai" \
+              "$SAPHENE_API_KEY" \
+              "gemini-3.1-flash-lite" \
+              "gemini-flash-latest" > .env
+          else
+            echo "No SAPHENE_API_KEY secret; running heuristic mode."
+          fi
+
+      - name: Verify MatriFlow claims
+        run: npm run bridge -- examples/matriflow-claims.md --repo targets/matriflow | tee bridge-matriflow.txt
+
+      - name: Verify AnvilOS claims
+        run: npm run bridge -- examples/anvilos-claims.md --repo targets/anvilos | tee bridge-anvilos.txt
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## Saphene verdicts"
+            echo "### MatriFlow"
+            'cat' bridge-matriflow.txt 2>/dev/null || echo "(step did not run)"
+            echo
+            echo "### AnvilOS"
+            'cat' bridge-anvilos.txt 2>/dev/null || echo "(step did not run)"
+          } >> "$GITHUB_STEP_SUMMARY"

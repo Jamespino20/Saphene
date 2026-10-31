@@ -1,0 +1,9 @@
+{
+  "id": "clm_00000001",
+  "text": "AnvilOS README clones from github.com/Jamespino20/AnvilOS",
+  "category": "fact",
+  "source": "D:\\University\\Systems Integration\\README.md",
+  "expectedEvidence": ["github.com/Jamespino20/AnvilOS"],
+  "status": "unverified",
+  "evidence": []
+}
