@@ -35,6 +35,12 @@ npm run verify -- examples/matriflow-claims.md memory --no-model
 # bridge: verify SRS claims in a memory file against a repo or paper
 npm run bridge -- examples/matriflow-claims.md --repo D:\Projects\matriflow
 
+# audit against implementation code only (specs cannot testify for themselves)
+npm run bridge -- examples/agapay-claims.md --repo D:\Projects\Agapay --code-only
+
+# PR review gate: diff verdicts against a committed baseline ledger
+npm run review -- --claims examples/matriflow-claims.md --repo D:\Projects\matriflow --ledger .saphene/matriflow.ledger.json
+
 # drift-injection harness
 npm run drift -- README.md drifted.md "AnvilOS README clones from github.com/jbespino0920/AnvilOS"
 ```

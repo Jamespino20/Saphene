@@ -11,14 +11,19 @@ export interface AdapterOptions {
   useModel?: boolean;
   targets?: string[];
   includeSource?: boolean;
+  excludeFiles?: string[];
+  codeOnly?: boolean;
 }
 
 export interface VerifyOptions {
   includeSource?: boolean;
+  excludeFiles?: string[];
+  codeOnly?: boolean;
 }
 
 const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".venv", "__pycache__", ".idea", ".vscode"]);
 const SKIP_FILES = new Set(["package-lock.json", "yarn.lock", "pnpm-lock.yaml", "LICENSE"]);
+const CODE_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".sql", ".prisma"]);
 const TEXT_EXTS = new Set([
   ".md", ".txt", ".ts", ".tsx", ".js", ".jsx", ".json", ".php", ".sql", ".html",
   ".css", ".scss", ".yml", ".yaml", ".csv", ".prisma", ".xml", ".env.example", ".htaccess",
@@ -30,21 +35,30 @@ function grepLine(file: string, needle: string, caseInsensitive = false): string
   if (!existsSync(file) || !statSync(file).isFile()) return null;
   const content = readFileSync(file, "utf8");
   const lines = content.split(/\r?\n/);
+  const shortNeedle = needle.length < 5;
+  const pattern = shortNeedle
+    ? new RegExp("\\b" + needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), caseInsensitive ? "i" : "")
+    : null;
   for (let i = 0; i < lines.length; i++) {
-    const hay = caseInsensitive ? lines[i].toLowerCase() : lines[i];
-    const pin = caseInsensitive ? needle.toLowerCase() : needle;
-    if (hay.includes(pin)) {
-      return `${file}:${i + 1}: ${lines[i].trim()}`;
+    const line = lines[i];
+    const hit = pattern
+      ? pattern.test(line)
+      : caseInsensitive
+        ? line.toLowerCase().includes(needle.toLowerCase())
+        : line.includes(needle);
+    if (hit) {
+      return `${file}:${i + 1}: ${line.trim()}`;
     }
   }
   return null;
 }
 
-function isScannable(file: string): boolean {
-  return TEXT_EXTS.has(extname(file).toLowerCase());
+function isScannable(file: string, codeOnly: boolean): boolean {
+  const ext = extname(file).toLowerCase();
+  return codeOnly ? CODE_EXTS.has(ext) : TEXT_EXTS.has(ext);
 }
 
-function searchDir(dir: string, needle: string, budget: { count: number }): string | null {
+function searchDir(dir: string, needle: string, budget: { count: number }, exclude: ReadonlySet<string>, codeOnly: boolean): string | null {
   if (budget.count <= 0) return null;
   let entries: string[];
   try {
@@ -63,9 +77,15 @@ function searchDir(dir: string, needle: string, budget: { count: number }): stri
     }
     if (stat.isDirectory()) {
       if (SKIP_DIRS.has(name)) continue;
-      const hit = searchDir(full, needle, budget);
+      const hit = searchDir(full, needle, budget, exclude, codeOnly);
       if (hit) return hit;
-    } else if (stat.isFile() && stat.size <= MAX_FILE_BYTES && isScannable(name) && !SKIP_FILES.has(name.toLowerCase())) {
+    } else if (
+      stat.isFile() &&
+      stat.size <= MAX_FILE_BYTES &&
+      isScannable(name, codeOnly) &&
+      !SKIP_FILES.has(name.toLowerCase()) &&
+      !exclude.has(name.toLowerCase())
+    ) {
       budget.count -= 1;
       const hit = grepLine(full, needle, true);
       if (hit) return hit;
@@ -74,12 +94,12 @@ function searchDir(dir: string, needle: string, budget: { count: number }): stri
   return null;
 }
 
-export function searchTargets(targets: string[], needle: string): string | null {
+export function searchTargets(targets: string[], needle: string, exclude: ReadonlySet<string> = new Set(), codeOnly = false): string | null {
   for (const target of targets) {
     if (!existsSync(target)) continue;
     const stat = statSync(target);
     if (stat.isDirectory()) {
-      const hit = searchDir(target, needle, { count: MAX_FILES_PER_DIR_SCAN });
+      const hit = searchDir(target, needle, { count: MAX_FILES_PER_DIR_SCAN }, exclude, codeOnly);
       if (hit) return hit;
     } else {
       const hit = grepLine(target, needle, true);
@@ -91,13 +111,15 @@ export function searchTargets(targets: string[], needle: string): string | null 
 
 export function verifyClaim(claim: Claim, targets: string[] = [], options: VerifyOptions = {}): Verdict {
   const includeSource = options.includeSource ?? true;
+  const exclude = new Set((options.excludeFiles ?? []).map((f) => f.toLowerCase()));
+  const codeOnly = options.codeOnly ?? false;
   const searchSpace = includeSource ? [claim.source, ...targets] : [...targets];
   const evidence: Evidence[] = [];
   const found: string[] = [];
 
   for (const needle of claim.expectedEvidence) {
     const sourceHit = includeSource ? grepLine(claim.source, needle) : null;
-    const hit = sourceHit ?? searchTargets(targets, needle);
+    const hit = sourceHit ?? searchTargets(targets, needle, exclude, codeOnly);
     if (hit) {
       found.push(needle);
       evidence.push({
@@ -148,7 +170,6 @@ export async function runAdapter(
   const targets = options.targets ?? [];
   const includeSource = options.includeSource ?? true;
   let claims = extractClaims(source, content);
-
   if (options.useModel) {
     const cfg = getModelConfig();
     if (cfg) {
@@ -162,7 +183,7 @@ export async function runAdapter(
     }
   }
 
-  const verdicts = claims.map((c) => verifyClaim(c, targets, { includeSource }));
+  const verdicts = claims.map((c) => verifyClaim(c, targets, { includeSource, excludeFiles: options.excludeFiles, codeOnly: options.codeOnly }));
 
   const byId = new Map(verdicts.map((v) => [v.claimId, v]));
   const traceability: TraceabilityRow[] = claims

@@ -80,7 +80,8 @@ async function main(): Promise<number> {
         args[i - 1] !== "--repo" &&
         args[i - 1] !== "--paper" &&
         args[i - 1] !== "--out" &&
-        args[i - 1] !== "--memory-dir",
+        args[i - 1] !== "--memory-dir" &&
+        args[i - 1] !== "--exclude",
     );
     const file = positional[0];
     if (!file || !existsSync(file)) {
@@ -89,6 +90,8 @@ async function main(): Promise<number> {
     }
 
     const targets = [...collectFlagValues("--repo"), ...collectFlagValues("--paper")];
+    const excludes = collectFlagValues("--exclude");
+    const codeOnly = args.includes("--code-only");
     for (const t of targets) {
       if (!existsSync(t)) {
         console.error(`Target not found: ${t}`);
@@ -104,6 +107,8 @@ async function main(): Promise<number> {
       useModel: !noModel,
       targets,
       includeSource: false,
+      excludeFiles: excludes,
+      codeOnly,
     });
 
     const summary = printSummary(claims, verdicts);

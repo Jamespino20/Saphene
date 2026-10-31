@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saphene — Clarity Through Evidence</title>
+<meta name="description" content="CI for what your agent remembers. Saphene turns workspace memory into a claim ledger, verifies it against real code, and blocks drift in your PRs.">
+<style>
+  :root {
+    --bg: #0b0f14; --surface: #111823; --border: #1e2a3a;
+    --text: #e6edf3; --muted: #8b98a9; --accent: #4ade80;
+    --warn: #fbbf24; --bad: #f87171; --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font: 16px/1.65 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+  nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; }
+  .logo { font-family: var(--mono); font-weight: 700; font-size: 18px; letter-spacing: 0.5px; }
+  .logo span { color: var(--accent); }
+  .btn { display: inline-block; padding: 10px 18px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); text-decoration: none; font-size: 14px; }
+  .btn.primary { background: var(--accent); color: #052e16; border-color: var(--accent); font-weight: 600; }
+  header { padding: 72px 0 56px; }
+  h1 { font-size: clamp(34px, 6vw, 54px); line-height: 1.1; letter-spacing: -1px; }
+  h1 em { color: var(--accent); font-style: normal; }
+  .sub { color: var(--muted); font-size: 19px; max-width: 640px; margin: 18px 0 28px; }
+  h2 { font-size: 26px; margin: 56px 0 8px; letter-spacing: -0.5px; }
+  h2 + p.lead { color: var(--muted); margin-bottom: 24px; }
+  .chips { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+  .chip { font-family: var(--mono); font-size: 13px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border); }
+  .chip.m { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+  .chip.p { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
+  .chip.u { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
+  .term { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; font-family: var(--mono); font-size: 13.5px; overflow-x: auto; }
+  .term .c { color: var(--muted); }
+  .term .g { color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.4px; }
+  td.v { font-family: var(--mono); font-size: 13px; }
+  .ok { color: var(--accent); } .warn { color: var(--warn); } .no { color: var(--bad); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 20px 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+  .card h3 { font-size: 15px; margin-bottom: 6px; }
+  .card p { color: var(--muted); font-size: 14px; }
+  .card code { font-family: var(--mono); font-size: 12.5px; color: var(--accent); }
+  .quote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 14px 0; font-family: var(--mono); font-size: 13px; color: var(--muted); background: var(--surface); border-radius: 0 8px 8px 0; }
+  footer { border-top: 1px solid var(--border); margin-top: 72px; padding: 28px 0 48px; color: var(--muted); font-size: 13.5px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav>
+  <div class="logo">saphene<span>_</span></div>
+  <a class="btn primary" href="https://github.com/Jamespino20/Saphene">GitHub</a>
+</nav>
+
+<header>
+  <h1>CI for what your<br>agent <em>remembers</em>.</h1>
+  <p class="sub">Coding agents forget. Memory drifts. Saphene turns workspace memory into a claim ledger, verifies every claim against real code, and blocks the drift — in CI, in PRs, and over MCP.</p>
+  <div class="chips">
+    <span class="chip m">matched ✔</span>
+    <span class="chip p">partial ~</span>
+    <span class="chip u">unfound ✗</span>
+    <span class="chip">every verdict carries a file:line receipt</span>
+  </div>
+  <a class="btn primary" href="https://github.com/Jamespino20/Saphene">Get started</a>
+</header>
+
+<h2>Why</h2>
+<p class="lead">Built-in AI and coding agents (Cline, Kilo, Cursor, OpenCode) can check a claim when asked — interactively, once, with no receipts. None of them persist what was verified, re-check it when the disk changes, or fail a PR when your notes start lying. Saphene is the audit layer those tools don't have.</p>
+
+<h2>Four commands</h2>
+<div class="term">
+<span class="c"># scaffold a memory directory (or point at an existing one)</span><br>
+npm run init -- --memory-dir ./memory<br><br>
+<span class="c"># verify claims in one file</span><br>
+npm run bridge -- claims.md --repo ../your-repo<br><br>
+<span class="c"># audit a whole memory directory against a repo, ledger + drift diff</span><br>
+npm run memory -- --memory-dir ./memory --repo ../your-repo<br><br>
+<span class="c"># audit against <span class="g">implementation code only</span> — specs can't testify for themselves</span><br>
+npm run bridge -- claims.md --repo ../your-repo --code-only
+</div>
+
+<h2>Case study: auditing a failed project</h2>
+<p class="lead">Agapay — a multi-tenant microfinance SaaS, dormant since May 2026. Its README promises a Compassion Policy, vouching, KYC, trust scores. We asked Saphene one question: <b>which promises did the code keep?</b></p>
+<table>
+  <tr><th>Evidence surface</th><th>Verdicts</th><th>What it proved</th></tr>
+  <tr><td>README as evidence</td><td class="v ok">10 matched</td><td>Self-fulfilling — a spec verifies itself</td></tr>
+  <tr><td>Whole repo</td><td class="v ok">10 matched</td><td>Docs & mockups pollute: “0.4” matched SVG path data, “vouch” matched an issue proposing to <i>delete</i> the feature</td></tr>
+  <tr><td><code>--code-only</code></td><td class="v warn">9 matched · 1 partial</td><td>Schema kept its promises — <code>CompassionActionType</code>, <code>GuaranteeStatus</code>, KYC enums all real. And every receipt is inspectable.</td></tr>
+</table>
+<div class="quote">matched → prisma/init.sql:86: CREATE TYPE "CompassionActionType" AS ENUM ('grace_period', 'term_extension', 'penalty_freeze');</div>
+<div class="quote">partial → src/app/api/loans/apply/route.ts:51: // THE NEXT STEP would be implementing a Bearer Token (JWT) extractor here.</div>
+<p class="lead" style="margin-top:12px">The second receipt is the point: Saphene matched a TODO comment saying the feature <i>isn't implemented yet</i> — and showed its work so a human catches it in two seconds. Precision is a journey; the receipts make it auditable.</p>
+
+<h2>Saphene Review — drift fails the PR</h2>
+<p class="lead">Commit a baseline ledger like a lockfile. Every pull request re-verifies claims against the PR tree and comments with the delta:</p>
+<div class="quote">### ⚠ Drift detected — this PR breaks 1 verified claim(s)<br>[matched → partial] EDD is calculated from LMP using Naegele's rule.</div>
+
+<h2>Speaks MCP. Sits in CI.</h2>
+<div class="grid">
+  <div class="card"><h3>Agent plugin via MCP</h3><p>One stdio server covers VS Code Copilot agent mode, Cursor, Cline, and OpenCode: <code>saphene_bridge</code>, <code>saphene_memory</code>, <code>saphene_verify</code>. Agents stop guessing; they call the ledger.</p></div>
+  <div class="card"><h3>GitHub Action</h3><p>Clones your target repos on every push, verifies claims, posts the verdict table to the job summary. Fails on drift. <a href="https://github.com/Jamespino20/Saphene/actions">See it green →</a></p></div>
+  <div class="card"><h3>Model-backed extraction</h3><p>Any OpenAI-compatible endpoint. Retry with backoff, fallback model chain, heuristic mode when no key is present. Your memory becomes structured claims; the evidence loop stays deterministic.</p></div>
+</div>
+
+<footer>
+  Saphene — Clarity Through Evidence · built by <a href="https://github.com/Jamespino20">James Bryant D. Espino</a> for the Meta AI Developer Hackathon · ISO/IEC/IEEE 29148-aligned traceability
+</footer>
+
+</div>
+</body>
+</html>
