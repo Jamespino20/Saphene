@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0b0f14;
+  --color-surface: #10161f;
+  --color-surface2: #141c28;
+  --color-line: #1e2a3a;
+  --color-line-strong: #2a3a50;
+  --color-ink: #e6edf3;
+  --color-muted: #93a1b3;
+  --color-accent: #4ade80;
+  --color-accent-dim: #22c55e;
+  --color-warn: #fbbf24;
+  --color-bad: #f87171;
+  --color-info: #7dd3fc;
+  --font-mono: "Spline Sans Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  --font-sans: "Public Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(74, 222, 128, 0.25);
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--color-bg); }
+::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 5px;
+  border: 2px solid var(--color-bg);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@utility notch {
+  clip-path: polygon(
+    0 14px, 14px 0,
+    100% 0, 100% calc(100% - 14px),
+    calc(100% - 14px) 100%, 0 100%
+  );
+}
+
+@utility dot-grid {
+  background-image: radial-gradient(var(--color-line) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.caret {
+  display: inline-block;
+  width: 8px;
+  height: 17px;
+  background: var(--color-accent);
+  vertical-align: -3px;
+  animation: blink 1s steps(1) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+.term-scanned::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(74, 222, 128, 0.35), transparent);
+  pointer-events: none;
+  animation: scanline 1.6s var(--ease-out-expo) 0.2s 1 forwards;
+}
+@keyframes scanline {
+  from { transform: translateY(-8%); opacity: 0; }
+  12% { opacity: 1; }
+  to { transform: translateY(1080%); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .caret { animation: none; }
+  .term-scanned::after { display: none; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
