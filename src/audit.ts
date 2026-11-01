@@ -1,30 +1,50 @@
-// Saphene Audit — model-driven code + business-flow findings, wrapped in the
-// claim-ledger discipline. The model proposes findings; every quote is
-// re-verified by grep before the finding is believed; results are ledgered
-// and diffed across runs so code rot becomes visible over time.
+// Saphene Audit — a panel of personalized senior-reviewer personas audits the
+// codebase in parallel. The model proposes findings; every quote is
+// re-verified by grep before it is believed; results are ledgered and diffed
+// across runs so code rot becomes visible over time. Reports land in a
+// chosen folder with long-term impact notes, open questions for the
+// developer, and context-rich fix prompts.
 
 import { chat, loadModelConfig } from "./model.js";
-import { readFileSync, existsSync, statSync, readdirSync } from "node:fs";
-import { join, extname, relative } from "node:path";
+import { readFileSync, existsSync, statSync, readdirSync, writeFileSync, mkdirSync } from "node:fs";
+import { join, extname, relative, dirname, basename, resolve } from "node:path";
 import { loadLedger, saveLedger, diffLedger, sleep, type LedgerEntry } from "./ledger.js";
 import { grepLine } from "./verify.js";
 
 const CODE_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".sql", ".prisma", ".php"]);
-const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".venv", "__pycache__", ".idea", ".vscode", "design-system"]);
+const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".venv", "__pycache__", ".idea", ".vscode", "design-system", "targets", "audits"]);
 const MAX_FILE_BYTES = 24_000;
 const MAX_FILE_CHARS = 8_000;
+const CONCURRENCY = 3;
+
+interface Persona {
+  id: string;
+  name: string;
+  brief: string;
+}
+
+const PERSONAS: Persona[] = [
+  { id: "security", name: "Security Engineer", brief: "injection, broken authz, missing auth, secrets exposure, tenant isolation failures" },
+  { id: "performance", name: "Performance Engineer", brief: "N+1 queries, unbounded work, redundant I/O, missing transactions, scaling traps" },
+  { id: "flow", name: "Business-Flow Analyst", brief: "dead-end workflows, missing process steps, unenforced business rules, half-finished features" },
+  { id: "quality", name: "Maintainability Reviewer", brief: "fragile patterns, error-handling gaps, duplication, dead code, hidden coupling" },
+];
 
 const SEVERITIES = ["critical", "major", "minor"] as const;
 const CATEGORIES = ["bug", "security", "performance", "business-flow", "incomplete"] as const;
+const PERSONA_IDS = PERSONAS.map((p) => p.id);
 
 export interface Finding {
   id: string;
+  persona: string;
   title: string;
   severity: (typeof SEVERITIES)[number];
   category: (typeof CATEGORIES)[number];
   file: string;
   line: number;
   quote: string;
+  impact: string;
+  questions: string[];
   suggestion: string;
   verified: boolean;
 }
@@ -35,6 +55,7 @@ let ledgerPath = ".saphene/audit.ledger.json";
 let maxFiles = 12;
 let updateLedger = false;
 let focus = "all";
+let outDir = "audits";
 let reportPath: string | undefined;
 
 for (let i = 0; i < args.length; i++) {
@@ -44,12 +65,13 @@ for (let i = 0; i < args.length; i++) {
     case "--max-files": maxFiles = parseInt(args[++i] ?? "", 10) || maxFiles; break;
     case "--update-ledger": updateLedger = true; break;
     case "--focus": focus = args[++i] ?? focus; break;
+    case "--out-dir": outDir = args[++i] ?? outDir; break;
     case "--report": reportPath = args[++i]; break;
   }
 }
 
 if (!repoDir || !existsSync(repoDir)) {
-  console.error("Usage: npm run audit -- --repo <dir> [--focus code|flow|all] [--max-files N] [--ledger <path>] [--update-ledger]");
+  console.error("Usage: npm run audit -- --repo <dir> [--focus code|flow|all] [--max-files N] [--out-dir audits] [--report <file>] [--update-ledger]");
   process.exit(1);
 }
 
@@ -58,6 +80,17 @@ if (!cfg) {
   console.error("[saphene] audit requires a model: set MODEL_* in .env");
   process.exit(2);
 }
+
+const AUDIT_SYSTEM =
+  "You simulate a panel of " + PERSONAS.length + " senior code reviewers, each with a distinct specialty: " +
+  PERSONAS.map((p) => `${p.id} (${p.name}: ${p.brief})`).join("; ") +
+  ". Each reviewer examines the file INDEPENDENTLY and only reports issues inside their specialty. " +
+  "Report concrete, defensible issues — no style nits. For every finding include: the reviewer id, a title, " +
+  "severity (critical/major/minor), category (bug/security/performance/business-flow/incomplete), a 1-based line number, " +
+  "a quote that appears VERBATIM in the file, the long-term impact if left unresolved (2+ sentences, concretely: what rots, " +
+  "what compounds, what it costs later), up to 2 clarifying questions a fixer should ask the developer first, and a fix direction. " +
+  'Respond with ONLY a JSON array: [{"reviewer": string, "title": string, "severity": string, "category": string, ' +
+  '"line": number, "quote": string, "impact": string, "questions": string[], "suggestion": string}]. No markdown fences.';
 
 function listCodeFiles(dir: string, out: string[] = []): string[] {
   if (out.length >= 200) return out;
@@ -98,24 +131,29 @@ function prioritize(files: string[]): string[] {
   return files.sort((a, b) => score(a) - score(b)).slice(0, maxFiles);
 }
 
-const AUDIT_SYSTEM =
-  "You are a rigorous code and business-flow auditor for a real repository. " +
-  "Find concrete, defensible issues: bugs, security holes, performance problems, " +
-  "incomplete business flows (workflows that dead-end or skip steps), and faulty logic. " +
-  "Do NOT report style nits. Every finding MUST include a quote that appears VERBATIM in the provided file " +
-  "and a 1-based line number. " +
-  'Respond with ONLY a JSON array: [{"title": string, "severity": "critical"|"major"|"minor", ' +
-  '"category": "bug"|"security"|"performance"|"business-flow"|"incomplete", ' +
-  '"line": number, "quote": string, "suggestion": string}]. No markdown fences.';
-
-function stableId(file: string, title: string): string {
+function stableId(file: string, persona: string, title: string): string {
   let hash = 0;
-  const input = `${file}::${title.toLowerCase()}`;
+  const input = `${file}::${persona}::${title.toLowerCase()}`;
   for (let i = 0; i < input.length; i++) {
     hash = (hash << 5) - hash + input.charCodeAt(i);
     hash |= 0;
   }
   return `fnd_${Math.abs(hash).toString(16)}`;
+}
+
+function extractContext(file: string, line: number, span = 8): { start: number; block: string } {
+  try {
+    const lines = readFileSync(file, "utf8").split(/\r?\n/);
+    const start = Math.max(1, line - span);
+    const end = Math.min(lines.length, line + span);
+    const block = lines
+      .slice(start - 1, end)
+      .map((l, idx) => `${String(start + idx).padStart(4)} | ${l}`)
+      .join("\n");
+    return { start, block };
+  } catch {
+    return { start: Math.max(1, line - span), block: "(context unavailable)" };
+  }
 }
 
 function parseFindings(raw: string, file: string): Array<Omit<Finding, "id" | "verified">> {
@@ -133,13 +171,16 @@ function parseFindings(raw: string, file: string): Array<Omit<Finding, "id" | "v
   }
   if (!Array.isArray(arr)) return [];
   const out: Array<Omit<Finding, "id" | "verified">> = [];
-  for (const item of arr.slice(0, 8)) {
+  for (const item of arr.slice(0, 12)) {
     if (typeof item !== "object" || item === null) continue;
     const o = item as Record<string, unknown>;
     const title = typeof o.title === "string" ? o.title.trim() : "";
     const quote = typeof o.quote === "string" ? o.quote.trim() : "";
     const line = typeof o.line === "number" && Number.isFinite(o.line) ? Math.max(1, Math.floor(o.line)) : 1;
     if (title.length < 10 || quote.length < 4) continue;
+    const personaRaw = typeof o.reviewer === "string" ? o.reviewer.toLowerCase() : "";
+    const persona =
+      PERSONAS.find((p) => personaRaw.includes(p.id) || personaRaw.includes(p.name.toLowerCase()))?.id ?? "quality";
     const severity = SEVERITIES.includes(o.severity as (typeof SEVERITIES)[number])
       ? (o.severity as (typeof SEVERITIES)[number])
       : "major";
@@ -147,26 +188,43 @@ function parseFindings(raw: string, file: string): Array<Omit<Finding, "id" | "v
       ? (o.category as (typeof CATEGORIES)[number])
       : "bug";
     out.push({
+      persona,
       title,
       severity,
       category,
       file: relative(repoDir!, file) || file,
       line,
       quote,
+      impact: typeof o.impact === "string" ? o.impact.trim() : "",
+      questions: Array.isArray(o.questions) ? o.questions.filter((q): q is string => typeof q === "string" && q.trim().length > 0) : [],
       suggestion: typeof o.suggestion === "string" ? o.suggestion.trim() : "",
     });
   }
   return out;
 }
 
+async function pool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  async function worker(): Promise<void> {
+    while (next < items.length) {
+      const idx = next++;
+      results[idx] = await fn(items[idx]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
 const files = prioritize(listCodeFiles(repoDir!));
 console.log(`Saphene audit — ${repoDir}`);
-console.log(`Focus: ${focus} | Files in scope: ${files.length} | Model: ${cfg!.model}`);
+console.log(`Panel: ${PERSONAS.map((p) => p.name).join(" · ")}`);
+console.log(`Focus: ${focus} | Files: ${files.length} | Model: ${cfg!.model} | Concurrency: ${CONCURRENCY}`);
 
-const findings: Finding[] = [];
 let checked = 0;
+const findings: Finding[] = [];
 
-for (const file of files) {
+await pool(files, CONCURRENCY, async (file) => {
   let content = readFileSync(file, "utf8");
   if (content.length > MAX_FILE_CHARS) content = content.slice(0, MAX_FILE_CHARS) + "\n...[truncated]";
   try {
@@ -177,26 +235,31 @@ for (const file of files) {
         {
           role: "user",
           content:
-            focus === "flow"
-              ? `Audit this file for BUSINESS-FLOW issues only: dead-end workflows, missing steps, unenforced rules, incomplete handling. File: ${file}\n\n${content}`
-              : `Audit this file for concrete bugs, security issues, performance problems, and incomplete business flows. File: ${file}\n\n${content}`,
+            (focus === "flow"
+              ? "Panel: Business-Flow Analyst leads; other reviewers may add only high-severity findings. "
+              : "") +
+            `File: ${file}\n\n${content}`,
         },
       ],
-      2048,
+      3072,
     );
-    for (const f of parseFindings(out, file)) {
-      const hit = grepLine(file, f.quote);
-      findings.push({ ...f, id: stableId(f.file, f.title), verified: hit !== null });
+    const parsed = parseFindings(out, file);
+    for (const f of parsed) {
+      const abs = join(repoDir!, f.file);
+      const hit = grepLine(abs, f.quote) ?? grepLine(file, f.quote);
+      findings.push({ ...f, id: stableId(f.file, f.persona, f.title), verified: hit !== null });
     }
     checked += 1;
+    process.stdout.write(`  [${checked}/${files.length}] ${relative(repoDir!, file)} — ${parsed.length} findings\n`);
   } catch (err) {
-    console.warn(`[saphene] audit failed for ${file}: ${err instanceof Error ? err.message : err}`);
+    checked += 1;
+    process.stdout.write(`  [${checked}/${files.length}] ${relative(repoDir!, file)} — audit failed: ${err instanceof Error ? err.message.slice(0, 80) : err}\n`);
   }
-  await sleep(1500);
-}
+});
 
 const unverified = findings.filter((f) => !f.verified).length;
 const bySev = (s: string) => findings.filter((f) => f.severity === s).length;
+const byPersona = (id: string) => findings.filter((f) => f.persona === id).length;
 
 const entries: LedgerEntry[] = findings.map((f) => ({
   claimId: f.id,
@@ -215,17 +278,19 @@ console.log(
     `critical ${bySev("critical")} · major ${bySev("major")} · minor ${bySev("minor")}` +
     (unverified ? ` | ${unverified} quote-unverified (dropped to partial)` : ""),
 );
+console.log(`By reviewer: ${PERSONAS.map((p) => `${p.name}: ${byPersona(p.id)}`).join(" · ")}`);
 
 const order = { critical: 0, major: 1, minor: 2 } as const;
 for (const f of [...findings].sort((a, b) => order[a.severity] - order[b.severity])) {
+  const reviewer = PERSONAS.find((p) => p.id === f.persona)?.name ?? f.persona;
   const flag = f.verified ? "" : " (unverified quote)";
   console.log(`\n  [${f.severity.toUpperCase()}][${f.category}] ${f.title}${flag}`);
-  console.log(`    ${f.file}:${f.line}`);
+  console.log(`    reviewer: ${reviewer} · ${f.file}:${f.line}`);
   console.log(`    > ${f.quote.slice(0, 140)}`);
-  if (f.suggestion) console.log(`    fix: ${f.suggestion.slice(0, 140)}`);
+  if (f.questions.length) console.log(`    asks: ${f.questions[0].slice(0, 120)}`);
 }
 
-if (diff.drifted.length > 0 || diff.resolved.length > 0) {
+if (diff.drifted.length > 0 || diff.resolved.length > 0 || diff.added.length > 0) {
   console.log(`\n  vs previous audit: ${diff.unchanged} unchanged, ${diff.added.length} new, ${diff.resolved.length} fixed, ${diff.drifted.length} regressed`);
 }
 
@@ -238,16 +303,25 @@ if (updateLedger) {
   console.log(`\nLedger saved: ${ledgerPath}`);
 }
 
-if (reportPath) {
-  const esc = (s: string): string => s.replace(/`/g, "'");
+if (reportPath || outDir) {
+  const esc = (s: string): string => s.replace(/`/g, "'").replace(/\r?\n/g, " ");
   const byCat = (c: string) => findings.filter((f) => f.category === c).length;
+  const ts = new Date();
+  const stamp = `${ts.getFullYear()}${String(ts.getMonth() + 1).padStart(2, "0")}${String(ts.getDate()).padStart(2, "0")}-${String(ts.getHours()).padStart(2, "0")}${String(ts.getMinutes()).padStart(2, "0")}`;
+  const resolvedPath = reportPath ?? join(outDir, `${basename(resolve(repoDir!))}-${stamp}.md`);
   const md: string[] = [
     "# Saphene Audit Report",
     "",
     `**Repository:** \`${repoDir}\`  `,
-    `**Generated:** ${new Date().toISOString()}  `,
-    `**Model:** ${cfg!.model} · focus: ${focus} · files scanned: ${checked}  `,
+    `**Generated:** ${ts.toISOString()}  `,
+    `**Model:** ${cfg!.model} · focus: ${focus} · files scanned: ${checked} · concurrency: ${CONCURRENCY}  `,
     `**Findings:** ${findings.length} total — critical ${bySev("critical")} · major ${bySev("major")} · minor ${bySev("minor")}`,
+    "",
+    "## Review panel",
+    "",
+    "| Reviewer | Specialty | Findings |",
+    "| --- | --- | --- |",
+    ...PERSONAS.map((p) => `| ${p.name} | ${p.brief} | ${byPersona(p.id)} |`),
     "",
     "| Severity | Count | | Category | Count |",
     "| --- | --- | --- | --- | --- |",
@@ -257,46 +331,80 @@ if (reportPath) {
     `| | | | business-flow | ${byCat("business-flow")} |`,
     `| | | | incomplete | ${byCat("incomplete")} |`,
     "",
+    prev ? `**vs previous audit:** ${diff.unchanged} unchanged · ${diff.added.length} new · ${diff.resolved.length} fixed · ${diff.drifted.length} regressed` : "**vs previous audit:** first run — baseline established.",
+    "",
     "## How to use this report",
     "",
     "1. **Every finding carries a receipt.** The `quote` was re-verified verbatim against the named file before the finding was believed; findings whose quote could not be located are marked `partial` and deserve extra scrutiny.",
-    "2. **Work critical → major → minor.** Security and bug categories first.",
-    "3. **Fix prompts are copy-paste ready.** Paste a finding's fix prompt into any coding agent (Copilot, Cursor, Cline, OpenCode) to generate the patch, then review the diff like you would a colleague's.",
-    "4. **Re-audit to track progress.** Run with `--update-ledger` each time; the ledger diffs findings across runs, so newly introduced issues show up as regressions and fixed ones as resolved.",
+    "2. **Reviewers are personas, not one blob.** Each finding names the reviewer who raised it — treat the Security Engineer's items differently from the Maintainability Reviewer's.",
+    "3. **Work critical → major → minor.** Security and bug categories first.",
+    "4. **Fix prompts are context-rich and copy-paste ready.** They include surrounding code, long-term impact, and the reviewer's open questions. Paste one into any coding agent; if the questions matter, the agent should ask you before writing code.",
+    "5. **Re-audit to track progress.** Run with `--update-ledger`; the ledger diffs findings across runs — regressions surface as drift.",
     "",
     "## Findings",
     "",
   ];
   for (const f of [...findings].sort((a, b) => order[a.severity] - order[b.severity])) {
+    const reviewer = PERSONAS.find((p) => p.id === f.persona)?.name ?? f.persona;
+    const ctx = extractContext(join(repoDir!, f.file), f.line);
+    const questionsBlock: string[] = f.questions.length
+      ? [
+          `- **Questions for the developer:**`,
+          ...f.questions.map((q) => `  - ${esc(q)}`),
+        ]
+      : [];
+    const promptQuestionsBlock: string[] = f.questions.length
+      ? [
+          "Open questions from the reviewer — if any of these change the approach, ask the developer before writing code:",
+          ...f.questions.map((q) => `- ${esc(q)}`),
+          "",
+        ]
+      : [];
     md.push(
       `### [${f.severity.toUpperCase()}][${f.category}] ${esc(f.title)}`,
       "",
+      `- **Reviewer:** ${reviewer}`,
       `- **Location:** \`${f.file}:${f.line}\`${f.verified ? "" : " · _quote-unverified (partial)_"}`,
       `- **Evidence:**`,
       "```",
       f.quote.slice(0, 200),
       "```",
+      `- **Long-term impact if unresolved:** ${esc(f.impact) || "—"}`,
+      ...questionsBlock,
       `- **Fix direction:** ${esc(f.suggestion) || "—"}`,
+      "",
+      `**Surrounding code (${f.file}, lines ${ctx.start}–${ctx.start + ctx.block.split("\n").length - 1}):**`,
+      "```",
+      ctx.block,
+      "```",
       "",
       "**Fix prompt** (paste into your agent):",
       "```text",
-      `In ${f.file} around line ${f.line}, the code currently reads:`,
+      `You are fixing one reviewed issue in the repository at ${repoDir}.`,
       "",
-      f.quote.slice(0, 200),
+      `File: ${f.file} (target line ${f.line}). Surrounding code:`,
       "",
-      `There is a ${f.severity} ${f.category} issue: ${esc(f.title)}.`,
-      esc(f.suggestion),
+      ctx.block,
       "",
-      "Produce the corrected code for this section. Match the file's existing style and conventions, keep the change minimal and focused on this issue, and do not add comments explaining the fix.",
+      `Issue [${f.severity} / ${f.category}], raised by our ${reviewer} review:`,
+      esc(f.title),
+      "",
+      f.impact ? `Long-term impact if unresolved: ${esc(f.impact)}` : "",
+      `Fix direction: ${esc(f.suggestion) || "Use your judgment consistent with the issue."}`,
+      "",
+      ...promptQuestionsBlock,
+      "Requirements:",
+      "- Keep the diff minimal and focused on this issue only.",
+      "- Match the file's existing style and conventions.",
+      "- Do not add comments explaining the fix.",
+      "- After your patch, state any assumptions you made in one short list.",
       "```",
       "",
     );
   }
-  const { writeFileSync, mkdirSync } = await import("node:fs");
-  const { dirname } = await import("node:path");
-  mkdirSync(dirname(reportPath), { recursive: true });
-  writeFileSync(reportPath, md.join("\n"), "utf8");
-  console.log(`\nReport written: ${reportPath}`);
+  mkdirSync(dirname(resolvedPath), { recursive: true });
+  writeFileSync(resolvedPath, md.filter((l) => l !== "").join("\n").replace(/\n{3,}/g, "\n\n"), "utf8");
+  console.log(`\nReport written: ${resolvedPath}`);
 }
 
 process.exitCode = bySev("critical") > 0 ? 1 : 0;
