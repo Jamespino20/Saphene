@@ -30,26 +30,27 @@
     <span class="chip p"><span class="dot"></span>partial</span>
     <span class="chip u"><span class="dot"></span>unfound</span>
     <span class="chip">every verdict carries a file:line receipt</span>
+    <span class="chip">free & open source · runs offline</span>
   </div>
   <h1>CI for what your<br>agent <em>remembers</em>.</h1>
-  <p class="lead" style="margin:20px 0 30px;">Coding agents forget. Docs drift. Specs testify for themselves. Saphene turns memory and specs into a claim ledger, audits code with a panel of reviewer personas, and blocks the drift: in CI, in PRs, and over MCP.</p>
+  <p class="lead" style="margin:20px 0 30px;">Coding agents forget. Docs drift. Specs testify for themselves. Saphene turns memory and specs into a claim ledger, audits code with a panel of reviewer personas, and blocks the drift: in CI, in PRs, and over MCP. No coding agent? It still guards your README, ADRs, and specs against the code.</p>
   <div style="display:flex; gap:12px; flex-wrap:wrap;">
-    <a class="btn primary" href="docs.html">Read the docs</a>
-    <a class="btn" href="https://github.com/Jamespino20/Saphene">Star on GitHub</a>
+    <a class="btn primary" href="#demo">See it work</a>
+    <a class="btn" href="docs.html">Run it in 5 minutes</a>
   </div>
 </header>
 
 <section id="demo" style="padding-top:30px;">
   <h2>Watch it work</h2>
-  <p class="lead" style="margin-bottom:22px;">Real command shapes, real output grammar. This is what each Saphene surface prints. Switch tabs; each one is a different tool.</p>
+  <p class="lead" style="margin-bottom:22px;">Three surfaces, one discipline: no verdict without a citation. Switch tabs to compare claim verification, the audit panel, and memory drift watch.</p>
 
   <div class="term">
     <div class="term-bar">
       <span class="t-dot"></span><span class="t-dot"></span><span class="t-dot"></span>
       <div class="term-tabs" role="tablist">
-        <button class="on" data-tab="bridge" role="tab" aria-selected="true">bridge</button>
-        <button data-tab="audit" role="tab" aria-selected="false">audit</button>
-        <button data-tab="memory" role="tab" aria-selected="false">memory</button>
+        <button class="on" data-tab="bridge" role="tab" aria-selected="true">Verify claims</button>
+        <button data-tab="audit" role="tab" aria-selected="false">Audit code</button>
+        <button data-tab="memory" role="tab" aria-selected="false">Watch memory</button>
       </div>
     </div>
     <div class="term-body" id="term" aria-live="polite"></div>
@@ -117,7 +118,7 @@
 
 <section id="usecases">
   <h2>Six jobs it does on a normal repo</h2>
-  <p class="lead">Even if you never enter a hackathon. Each one is a command you already have.</p>
+  <p class="lead">No special repo shape, no setup ceremony. Each job is one command.</p>
   <div class="uc-grid">
     <div class="uc">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>
@@ -136,8 +137,8 @@
     </div>
     <div class="uc">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
-      <h3>Capstone & SRS traceability</h3>
-      <p>ISO/IEC/IEEE 29148-aligned: requirements become claims, evidence becomes citations, and the traceability matrix exports to CSV or markdown for your defense panel.</p>
+      <h3>Compliance & SRS traceability</h3>
+      <p>ISO/IEC/IEEE 29148-aligned: requirements become claims, evidence becomes citations, and the traceability matrix exports to CSV or markdown for auditors, reviewers, or clients.</p>
     </div>
     <div class="uc">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-9-9"/><path d="M21 3l-9 9"/><path d="M15 3h6v6"/></svg>
@@ -152,14 +153,47 @@
   </div>
 </section>
 
+<section id="audiences">
+  <h2>Who is this for?</h2>
+  <p class="lead">Four profiles, one common thread: someone wrote down what the code is supposed to do, and they want proof it still does.</p>
+  <div class="uc-grid">
+    <div class="uc">
+      <h3>Solo developers with an agent in the loop</h3>
+      <p>You keep notes and specs so Copilot, Cursor, or Cline has context. Months later, some of those notes describe code that no longer exists. Point Saphene at your memory directory: every claim is re-verified against the working tree, and stale notes come back as drift with a citation instead of a hunch.</p>
+    </div>
+    <div class="uc">
+      <h3>Capstone and SRS teams</h3>
+      <p>Requirements become claims with clause numbers and requirement types, verdicts carry file:line receipts, and the traceability matrix exports to CSV or markdown. When an adviser asks for proof that requirement 4.3 is implemented, you hand over the citation.</p>
+    </div>
+    <div class="uc">
+      <h3>Maintainers adopting unfamiliar code</h3>
+      <p>Inherited a repo with more history than documentation? Run the panel before your first commit. Four reviewer personas file findings with verbatim quotes and paste-ready fix prompts, and the ledger you commit becomes the baseline every later audit is diffed against.</p>
+    </div>
+    <div class="uc">
+      <h3>Teams that gate PRs on documented behavior</h3>
+      <p>Commit a claims ledger and the review gate checks every pull request against it. A patch that makes documented behavior false fails CI with the line that proves it, so review starts from evidence instead of opinion.</p>
+    </div>
+  </div>
+</section>
+
+<section id="versus">
+  <h2>Why not just a linter? Or an AI reviewer?</h2>
+  <p class="lead">Because neither one remembers what it told you yesterday.</p>
+  <div class="uc-grid">
+    <div class="uc"><h3>A linter</h3><p>Checks style rules against the current file. No memory of your docs, no cross-file claims, no opinion on whether the code still matches what you wrote down. Nothing persists between runs.</p></div>
+    <div class="uc"><h3>An AI code reviewer</h3><p>Reads your diff and gives a one-shot impression. Smart, but stateless: it never verifies what your README promised, and its review of this PR is forgotten by the next one.</p></div>
+    <div class="uc"><h3>Saphene</h3><p>Verdicts with grep-verified file:line receipts, persisted to a ledger. Re-runs diff against the last one, documented behavior that stops being true fails CI, and the same engine answers your agent over MCP.</p></div>
+  </div>
+</section>
+
 <section id="case">
   <h2>Case study: auditing a failed project</h2>
   <p class="lead">Agapay — a multi-tenant microfinance SaaS, dormant since May 2026. Its README promises a Compassion Policy, vouching, KYC, trust scores. One question: <b>which promises did the code keep?</b></p>
   <table>
     <tr><th>Evidence surface</th><th>Verdicts</th><th>What it proved</th></tr>
-    <tr><td>README as evidence</td><td class="ok" style="font-family:var(--mono); font-size:13px;">10 matched</td><td>Self-fulfilling — a spec verifies itself</td></tr>
-    <tr><td>Whole repo</td><td class="ok" style="font-family:var(--mono); font-size:13px;">10 matched</td><td>Docs & mockups pollute: “0.4” matched SVG path data, “vouch” matched an issue proposing to <i>delete</i> the feature</td></tr>
-    <tr><td><code>--code-only</code></td><td class="warn" style="font-family:var(--mono); font-size:13px;">9 matched · 1 partial</td><td>Schema kept its promises — <code>CompassionActionType</code>, <code>GuaranteeStatus</code>, KYC enums all real. Every receipt inspectable.</td></tr>
+    <tr><td>README as evidence</td><td class="warn" style="font-family:var(--mono); font-size:13px;">10 matched · self-fulfilling</td><td>A spec verifies itself — this proves nothing</td></tr>
+    <tr><td>Whole repo</td><td class="warn" style="font-family:var(--mono); font-size:13px;">10 matched · polluted</td><td>Docs & mockups vote too: “0.4” matched SVG path data, “vouch” matched an issue proposing to <i>delete</i> the feature</td></tr>
+    <tr><td><code>--code-only</code></td><td class="ok" style="font-family:var(--mono); font-size:13px;">9 matched · 1 partial · precise</td><td>Schema kept its promises — <code>CompassionActionType</code>, <code>GuaranteeStatus</code>, KYC enums all real. Every receipt inspectable.</td></tr>
   </table>
   <div class="case-note">partial → src/app/api/loans/apply/route.ts:51: // THE NEXT STEP would be implementing a Bearer Token (JWT) extractor here.</div>
   <p class="lead" style="margin-top:14px;">The second receipt is the point: Saphene matched a TODO saying the feature <i>isn't implemented</i>, and showed its work so a human catches it in two seconds.</p>
@@ -171,8 +205,18 @@
   </div>
 </section>
 
+<section id="start" style="text-align:center;">
+  <h2>Your first verdict in five minutes</h2>
+  <div class="cmd" style="text-align:left; max-width:640px; margin:22px auto;"><span class="prompt">$</span> git clone https://github.com/Jamespino20/Saphene.git && cd Saphene && npm install<br><span class="prompt">$</span> npm run bridge -- examples/agapay-claims.md --repo D:/Projects/your-repo --code-only<button class="copy" data-copy="git clone https://github.com/Jamespino20/Saphene.git && cd Saphene && npm install
+npm run bridge -- examples/agapay-claims.md --repo D:/Projects/your-repo --code-only">copy</button></div>
+  <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:22px;">
+    <a class="btn primary" href="docs.html">Open the docs</a>
+    <a class="btn" href="https://github.com/Jamespino20/Saphene">GitHub</a>
+  </div>
+</section>
+
 <footer>
-  <div>Saphene — Clarity Through Evidence · built by <a href="https://github.com/Jamespino20">James Bryant D. Espino</a> for the Meta AI Developer Hackathon · ISO/IEC/IEEE 29148-aligned traceability</div>
+  <div>Saphene — Clarity Through Evidence · ISO/IEC/IEEE 29148-aligned traceability · built by <a href="https://github.com/Jamespino20">James Bryant D. Espino</a> for the Meta AI Developer Hackathon</div>
   <div class="psst" style="margin-top:10px;" title="you found it">psst — press <b>D</b> in the demo terminal</div>
 </footer>
 
