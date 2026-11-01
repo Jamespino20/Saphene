@@ -4,115 +4,357 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Saphene — Clarity Through Evidence</title>
-<meta name="description" content="CI for what your agent remembers. Saphene turns workspace memory into a claim ledger, verifies it against real code, and blocks drift in your PRs.">
-<style>
-  :root {
-    --bg: #0b0f14; --surface: #111823; --border: #1e2a3a;
-    --text: #e6edf3; --muted: #8b98a9; --accent: #4ade80;
-    --warn: #fbbf24; --bad: #f87171; --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg); color: var(--text); font: 16px/1.65 -apple-system, "Segoe UI", Roboto, sans-serif; }
-  .wrap { max-width: 960px; margin: 0 auto; padding: 0 24px; }
-  nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; }
-  .logo { font-family: var(--mono); font-weight: 700; font-size: 18px; letter-spacing: 0.5px; }
-  .logo span { color: var(--accent); }
-  .btn { display: inline-block; padding: 10px 18px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); text-decoration: none; font-size: 14px; }
-  .btn.primary { background: var(--accent); color: #052e16; border-color: var(--accent); font-weight: 600; }
-  header { padding: 72px 0 56px; }
-  h1 { font-size: clamp(34px, 6vw, 54px); line-height: 1.1; letter-spacing: -1px; }
-  h1 em { color: var(--accent); font-style: normal; }
-  .sub { color: var(--muted); font-size: 19px; max-width: 640px; margin: 18px 0 28px; }
-  h2 { font-size: 26px; margin: 56px 0 8px; letter-spacing: -0.5px; }
-  h2 + p.lead { color: var(--muted); margin-bottom: 24px; }
-  .chips { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
-  .chip { font-family: var(--mono); font-size: 13px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border); }
-  .chip.m { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
-  .chip.p { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
-  .chip.u { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
-  .term { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; font-family: var(--mono); font-size: 13.5px; overflow-x: auto; }
-  .term .c { color: var(--muted); }
-  .term .g { color: var(--accent); }
-  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
-  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
-  th { color: var(--muted); font-weight: 600; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.4px; }
-  td.v { font-family: var(--mono); font-size: 13px; }
-  .ok { color: var(--accent); } .warn { color: var(--warn); } .no { color: var(--bad); }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 20px 0; }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
-  .card h3 { font-size: 15px; margin-bottom: 6px; }
-  .card p { color: var(--muted); font-size: 14px; }
-  .card code { font-family: var(--mono); font-size: 12.5px; color: var(--accent); }
-  .quote { border-left: 3px solid var(--accent); padding: 8px 16px; margin: 14px 0; font-family: var(--mono); font-size: 13px; color: var(--muted); background: var(--surface); border-radius: 0 8px 8px 0; }
-  footer { border-top: 1px solid var(--border); margin-top: 72px; padding: 28px 0 48px; color: var(--muted); font-size: 13.5px; }
-  a { color: var(--accent); }
-</style>
+<meta name="description" content="CI for what your agent remembers. Saphene turns workspace memory into a claim ledger, audits code and business flows with a panel of reviewer personas, and blocks drift in your PRs.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans+Mono:ital,wght@0,400;0,600;0,700;1,400&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="wrap">
 
-<nav>
-  <div class="logo">saphene<span>_</span></div>
-  <a class="btn primary" href="https://github.com/Jamespino20/Saphene">GitHub</a>
+<nav class="top" id="topnav">
+  <a class="logo" href="index.html">saphene<em>_</em></a>
+  <div class="links">
+    <a href="#demo">Demo</a>
+    <a href="#loop">The Loop</a>
+    <a href="#usecases">Use cases</a>
+    <a href="docs.html">Docs</a>
+    <a class="cta" href="https://github.com/Jamespino20/Saphene">GitHub</a>
+  </div>
 </nav>
 
-<header>
-  <h1>CI for what your<br>agent <em>remembers</em>.</h1>
-  <p class="sub">Coding agents forget. Memory drifts. Saphene turns workspace memory into a claim ledger, verifies every claim against real code, and blocks the drift — in CI, in PRs, and over MCP.</p>
-  <div class="chips">
-    <span class="chip m">matched ✔</span>
-    <span class="chip p">partial ~</span>
-    <span class="chip u">unfound ✗</span>
+<header style="padding:64px 0 40px;">
+  <div class="chips" style="margin-bottom:22px;">
+    <span class="chip m"><span class="dot"></span>matched</span>
+    <span class="chip p"><span class="dot"></span>partial</span>
+    <span class="chip u"><span class="dot"></span>unfound</span>
     <span class="chip">every verdict carries a file:line receipt</span>
   </div>
-  <a class="btn primary" href="https://github.com/Jamespino20/Saphene">Get started</a>
+  <h1>CI for what your<br>agent <em>remembers</em>.</h1>
+  <p class="lead" style="margin:20px 0 30px;">Coding agents forget. Docs drift. Specs testify for themselves. Saphene turns memory and specs into a claim ledger, audits code with a panel of reviewer personas, and blocks the drift: in CI, in PRs, and over MCP.</p>
+  <div style="display:flex; gap:12px; flex-wrap:wrap;">
+    <a class="btn primary" href="docs.html">Read the docs</a>
+    <a class="btn" href="https://github.com/Jamespino20/Saphene">Star on GitHub</a>
+  </div>
 </header>
 
-<h2>Why</h2>
-<p class="lead">Built-in AI and coding agents (Cline, Kilo, Cursor, OpenCode) can check a claim when asked — interactively, once, with no receipts. None of them persist what was verified, re-check it when the disk changes, or fail a PR when your notes start lying. Saphene is the audit layer those tools don't have.</p>
+<section id="demo" style="padding-top:30px;">
+  <h2>Watch it work</h2>
+  <p class="lead" style="margin-bottom:22px;">Real command shapes, real output grammar. This is what each Saphene surface prints. Switch tabs; each one is a different tool.</p>
 
-<h2>Four commands</h2>
-<div class="term">
-<span class="c"># scaffold a memory directory (or point at an existing one)</span><br>
-npm run init -- --memory-dir ./memory<br><br>
-<span class="c"># verify claims in one file</span><br>
-npm run bridge -- claims.md --repo ../your-repo<br><br>
-<span class="c"># audit a whole memory directory against a repo, ledger + drift diff</span><br>
-npm run memory -- --memory-dir ./memory --repo ../your-repo<br><br>
-<span class="c"># audit against <span class="g">implementation code only</span> — specs can't testify for themselves</span><br>
-npm run bridge -- claims.md --repo ../your-repo --code-only<br><br>
-<span class="c"># code + business-flow audit: model finds the rot, ledger remembers it</span><br>
-npm run audit -- --repo ../your-repo --update-ledger
-</div>
+  <div class="term">
+    <div class="term-bar">
+      <span class="t-dot"></span><span class="t-dot"></span><span class="t-dot"></span>
+      <div class="term-tabs" role="tablist">
+        <button class="on" data-tab="bridge" role="tab" aria-selected="true">bridge</button>
+        <button data-tab="audit" role="tab" aria-selected="false">audit</button>
+        <button data-tab="memory" role="tab" aria-selected="false">memory</button>
+      </div>
+    </div>
+    <div class="term-body" id="term" aria-live="polite"></div>
+  </div>
+  <p style="margin-top:14px; font-size:13.5px; color:var(--muted);">Output above is a faithful replay of real Saphene runs against <a href="https://github.com/Jamespino20/Agapay">a real dormant repository</a>, compressed for the page.</p>
+</section>
 
-<h2>Case study: auditing a failed project</h2>
-<p class="lead">Agapay — a multi-tenant microfinance SaaS, dormant since May 2026. Its README promises a Compassion Policy, vouching, KYC, trust scores. We asked Saphene one question: <b>which promises did the code keep?</b></p>
-<table>
-  <tr><th>Evidence surface</th><th>Verdicts</th><th>What it proved</th></tr>
-  <tr><td>README as evidence</td><td class="v ok">10 matched</td><td>Self-fulfilling — a spec verifies itself</td></tr>
-  <tr><td>Whole repo</td><td class="v ok">10 matched</td><td>Docs & mockups pollute: “0.4” matched SVG path data, “vouch” matched an issue proposing to <i>delete</i> the feature</td></tr>
-  <tr><td><code>--code-only</code></td><td class="v warn">9 matched · 1 partial</td><td>Schema kept its promises — <code>CompassionActionType</code>, <code>GuaranteeStatus</code>, KYC enums all real. And every receipt is inspectable.</td></tr>
-</table>
-<div class="quote">matched → prisma/init.sql:86: CREATE TYPE "CompassionActionType" AS ENUM ('grace_period', 'term_extension', 'penalty_freeze');</div>
-<div class="quote">partial → src/app/api/loans/apply/route.ts:51: // THE NEXT STEP would be implementing a Bearer Token (JWT) extractor here.</div>
-<p class="lead" style="margin-top:12px">The second receipt is the point: Saphene matched a TODO comment saying the feature <i>isn't implemented yet</i> — and showed its work so a human catches it in two seconds. Precision is a journey; the receipts make it auditable.</p>
+<section id="loop">
+  <h2>The Loop — why developers keep it running</h2>
+  <p class="lead">One audit is a snapshot. The ledger turns it into a cycle: fix, verify, re-audit. Every change to your code's health is diffed against the last run. Click a step.</p>
 
-<h2>Saphene Review — drift fails the PR</h2>
-<p class="lead">Commit a baseline ledger like a lockfile. Every pull request re-verifies claims against the PR tree and comments with the delta:</p>
-<div class="quote">### ⚠ Drift detected — this PR breaks 1 verified claim(s)<br>[matched → partial] EDD is calculated from LMP using Naegele's rule.</div>
+  <div class="loop" id="loopsteps">
+    <div class="loop-step on" data-i="0">
+      <div class="n">1</div>
+      <div class="body">
+        <h3>Audit — the panel files its review</h3>
+        <div class="detail">
+          <p>Four reviewer personas (security, performance, business-flow, maintainability) examine the code in parallel. Every finding must quote the file verbatim — and the quote is re-verified by grep before the finding is believed. Findings land in a ledger with stable IDs.</p>
+          <div class="cmd"><span class="prompt">$</span> npm run audit -- --repo . --update-ledger<button class="copy" data-copy="npm run audit -- --repo . --update-ledger">copy</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="loop-step" data-i="1">
+      <div class="n">2</div>
+      <div class="body">
+        <h3>Fix — prompts an agent can actually run</h3>
+        <div class="detail">
+          <p>The markdown report gives every finding surrounding code, long-term impact, and the reviewer's open questions. Paste the fix prompt into Copilot, Cursor, Cline, or OpenCode — if a question changes the approach, the agent is instructed to ask you first.</p>
+          <div class="case-note">npm run audit -- --repo . --report my-fixes.md</div>
+        </div>
+      </div>
+    </div>
+    <div class="loop-step" data-i="2">
+      <div class="n">3</div>
+      <div class="body">
+        <h3>Verify — the patch can't silently break promises</h3>
+        <div class="detail">
+          <p>After the fix, the claim ledger re-checks documented behavior against the new code, and the PR gate diffs verdicts against the committed baseline. A patch that makes a documented claim false fails the pull request — with the citation that proves it.</p>
+          <div class="cmd"><span class="prompt">$</span> npm run review -- --claims srs.md --repo . --ledger .saphene/srs.ledger.json<button class="copy" data-copy="npm run review -- --claims srs.md --repo . --ledger .saphene/srs.ledger.json">copy</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="loop-step" data-i="3">
+      <div class="n">4</div>
+      <div class="body">
+        <h3>Re-audit — rot becomes a diff</h3>
+        <div class="detail">
+          <p>The next audit diffs against the ledger: fixed findings show as <b>resolved</b>, newly introduced ones as <b>new</b>, and previously-verified claims that stopped holding as <b>drift</b>. Code health stops being a vibe and becomes a changelog.</p>
+          <div class="case-note">vs previous audit: 41 unchanged, 3 fixed, 2 new, 1 regressed</div>
+        </div>
+      </div>
+    </div>
+    <div class="loop-step" data-i="4">
+      <div class="n">5</div>
+      <div class="body">
+        <h3>Forget about it — CI runs the loop for you</h3>
+        <div class="detail">
+          <p>Two GitHub Actions ship in the repo: one verifies claims on every push and posts the verdict table, the other comments on every pull request with its drift delta. Add a cron trigger and the nightly audit watches the repo while you sleep.</p>
+          <div class="case-note">on:  push: [main]  pull_request:  schedule: [{cron: "0 3 * * *"}]</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-<h2>Speaks MCP. Sits in CI.</h2>
-<div class="grid">
-  <div class="card"><h3>Agent plugin via MCP</h3><p>One stdio server covers VS Code Copilot agent mode, Cursor, Cline, and OpenCode: <code>saphene_bridge</code>, <code>saphene_memory</code>, <code>saphene_verify</code>. Agents stop guessing; they call the ledger.</p></div>
-  <div class="card"><h3>GitHub Action</h3><p>Clones your target repos on every push, verifies claims, posts the verdict table to the job summary. Fails on drift. <a href="https://github.com/Jamespino20/Saphene/actions">See it green →</a></p></div>
-  <div class="card"><h3>Model-backed extraction</h3><p>Any OpenAI-compatible endpoint. Retry with backoff, fallback model chain, heuristic mode when no key is present. Your memory becomes structured claims; the evidence loop stays deterministic.</p></div>
-  <div class="card"><h3>Code & business-flow audit</h3><p>The model hunts bugs, security holes, and dead-end workflows; every finding's quote is re-verified by grep before it's believed, then ledgered — so re-audits diff code rot across commits.</p></div>
-</div>
+<section id="usecases">
+  <h2>Six jobs it does on a normal repo</h2>
+  <p class="lead">Even if you never enter a hackathon. Each one is a command you already have.</p>
+  <div class="uc-grid">
+    <div class="uc">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>
+      <h3>Adopt a legacy repo on day one</h3>
+      <p>New job, inherited codebase? Audit it before you touch anything. The panel maps where the bodies are buried, and the ledger becomes your baseline for the only question that matters: is my refactor making it better?</p>
+    </div>
+    <div class="uc">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5a2 2 0 012-2h13v18H6a2 2 0 01-2-2z"/><path d="M4 17h15M8 7h8M8 11h6"/></svg>
+      <h3>Stop documentation rot</h3>
+      <p>Point claims at your README, ADRs, and wiki. When the code stops matching the docs, CI flags the exact line that lied, before your teammates read it.</p>
+    </div>
+    <div class="uc">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      <h3>Nightly repo watch</h3>
+      <p>Cron the audit action at 3 AM. Wake up to a diff of what changed in your code's health, not a wall of repeats: stable IDs mean only real changes surface.</p>
+    </div>
+    <div class="uc">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+      <h3>Capstone & SRS traceability</h3>
+      <p>ISO/IEC/IEEE 29148-aligned: requirements become claims, evidence becomes citations, and the traceability matrix exports to CSV or markdown for your defense panel.</p>
+    </div>
+    <div class="uc">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-9-9"/><path d="M21 3l-9 9"/><path d="M15 3h6v6"/></svg>
+      <h3>Post-upgrade regression watch</h3>
+      <p>Major version bumps silently break behavior. Commit a claims baseline and the PR gate tells you exactly which documented behaviors the upgrade broke.</p>
+    </div>
+    <div class="uc">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      <h3>Agent memory hygiene</h3>
+      <p>Over MCP, your coding agent checks its own memory before answering. This note says X, the disk says Y. Saphene is the tool agents call instead of guessing.</p>
+    </div>
+  </div>
+</section>
+
+<section id="case">
+  <h2>Case study: auditing a failed project</h2>
+  <p class="lead">Agapay — a multi-tenant microfinance SaaS, dormant since May 2026. Its README promises a Compassion Policy, vouching, KYC, trust scores. One question: <b>which promises did the code keep?</b></p>
+  <table>
+    <tr><th>Evidence surface</th><th>Verdicts</th><th>What it proved</th></tr>
+    <tr><td>README as evidence</td><td class="ok" style="font-family:var(--mono); font-size:13px;">10 matched</td><td>Self-fulfilling — a spec verifies itself</td></tr>
+    <tr><td>Whole repo</td><td class="ok" style="font-family:var(--mono); font-size:13px;">10 matched</td><td>Docs & mockups pollute: “0.4” matched SVG path data, “vouch” matched an issue proposing to <i>delete</i> the feature</td></tr>
+    <tr><td><code>--code-only</code></td><td class="warn" style="font-family:var(--mono); font-size:13px;">9 matched · 1 partial</td><td>Schema kept its promises — <code>CompassionActionType</code>, <code>GuaranteeStatus</code>, KYC enums all real. Every receipt inspectable.</td></tr>
+  </table>
+  <div class="case-note">partial → src/app/api/loans/apply/route.ts:51: // THE NEXT STEP would be implementing a Bearer Token (JWT) extractor here.</div>
+  <p class="lead" style="margin-top:14px;">The second receipt is the point: Saphene matched a TODO saying the feature <i>isn't implemented</i>, and showed its work so a human catches it in two seconds.</p>
+
+  <div class="uc-grid" style="margin-top:26px;">
+    <div class="uc"><h3>Speaks MCP</h3><p>One stdio server covers VS Code Copilot agent mode, Cursor, Cline, and OpenCode: <code>saphene_bridge</code>, <code>saphene_memory</code>, <code>saphene_verify</code>, plus the audit panel on demand.</p></div>
+    <div class="uc"><h3>Lives in CI</h3><p>The <a href="https://github.com/Jamespino20/Saphene/actions">public run</a> clones target repos on every push, verifies claims, and posts verdict tables to the job summary. Fails on drift.</p></div>
+    <div class="uc"><h3>Any model, or none</h3><p>OpenAI-compatible endpoints with retry, backoff, and a fallback chain. No key? Heuristic mode keeps the evidence loop deterministic.</p></div>
+  </div>
+</section>
 
 <footer>
-  Saphene — Clarity Through Evidence · built by <a href="https://github.com/Jamespino20">James Bryant D. Espino</a> for the Meta AI Developer Hackathon · ISO/IEC/IEEE 29148-aligned traceability
+  <div>Saphene — Clarity Through Evidence · built by <a href="https://github.com/Jamespino20">James Bryant D. Espino</a> for the Meta AI Developer Hackathon · ISO/IEC/IEEE 29148-aligned traceability</div>
+  <div class="psst" style="margin-top:10px;" title="you found it">psst — press <b>D</b> in the demo terminal</div>
 </footer>
 
 </div>
+<div class="toast" id="toast">copied to clipboard</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var term = document.getElementById("term");
+  var toast = document.getElementById("toast");
+  var caret = '<span class="caret"></span>';
+
+  var SCRIPTS = {
+    bridge: [
+      ["c-cmd", "npm run bridge -- examples/agapay-claims.md --repo D:/Projects/Agapay --code-only"],
+      ["c-dim", "Saphene bridge — examples/agapay-claims.md"],
+      ["c-dim", "Targets: D:/Projects/Agapay"],
+      ["c-dim", ""],
+      ["c-dim", "  10 claims | 9 matched | 1 partial | 0 mismatch | 0 unfound"],
+      ["c-ok", "  [matched] [srs 4.3] A Compassion Policy suspends penalties and grants grace periods"],
+      ["c-dim", "           — prisma/init.sql:86: CREATE TYPE \"CompassionActionType\" AS ENUM ('grace_period', 'term_extension', 'penalty_freeze')"],
+      ["c-ok", "  [matched] [srs 4.2] Members vouch with a 25% guarantor liability share"],
+      ["c-dim", "           — prisma/init.sql:68: CREATE TYPE \"GuaranteeStatus\" AS ENUM ('pending', 'vouched', 'rejected', 'voided', 'charged')"],
+      ["c-warn", "  [partial] [srs 9.1] Sessions are JWT-based and scoped to tenant_id"],
+      ["c-dim", "           — src/app/api/loans/apply/route.ts:51: // THE NEXT STEP would be implementing a Bearer Token (JWT) extractor here."],
+      ["c-dim", ""],
+      ["c-dim", "Traceability matrix: 10 rows → audits/agapay-20261101-1544.md"],
+      ["c-dim", "  partial = matched a TODO saying the feature is NOT implemented. The receipt lets you catch that in two seconds."]
+    ],
+    audit: [
+      ["c-cmd", "npm run audit -- --repo D:/Projects/Agapay --update-ledger"],
+      ["c-dim", "Saphene audit — D:/Projects/Agapay"],
+      ["c-dim", "Panel: Security Engineer · Performance Engineer · Business-Flow Analyst · Maintainability Reviewer"],
+      ["c-dim", "Focus: all | Files: 10 | Model: gemini-3.5-flash | Concurrency: 3"],
+      ["c-dim", ""],
+      ["c-bad", "  [CRITICAL][security] Unauthenticated user can disable 2FA"],
+      ["c-dim", "    reviewer: Security Engineer · src/actions/2fa.ts:86"],
+      ["c-dim", "    > await tx.twoFactorAuth.update({"],
+      ["c-warn", "  [MAJOR][performance] Synchronous Blocking I/O in Async MCP Tool"],
+      ["c-dim", "    reviewer: Performance Engineer · src/mcp.ts:87"],
+      ["c-dim", "    > const content = readFileSync(file, \"utf8\");"],
+      ["c-warn", "  [MAJOR][business-flow] Missing Error Handling for Ledger File Corruption"],
+      ["c-dim", "    reviewer: Business-Flow Analyst · src/ledger.ts:38"],
+      ["c-dim", ""],
+      ["c-dim", "47 findings across 10 files | critical 13 · major 23 · minor 11"],
+      ["c-dim", "  11 quote-unverified findings were demoted to partial by the grep loop — the auditor audits itself."],
+      ["c-ok", "Report written: audits/agapay-20261101-1544.md  (fix prompts included, paste-ready)"]
+    ],
+    memory: [
+      ["c-cmd", "npm run memory -- --memory-dir ./memory --repo D:/Projects/AnvilOS"],
+      ["c-dim", "Saphene memory — ./memory"],
+      ["c-dim", "Modules: 3 | Targets: D:/Projects/AnvilOS"],
+      ["c-dim", "Previous run: 2026-10-31T03:06:21.300Z"],
+      ["c-dim", ""],
+      ["c-dim", "  4 ledgered claims | 3 matched | 1 partial | 0 unfound | 0 mismatch"],
+      ["c-bad", ""],
+      ["c-bad", "  DRIFT DETECTED (1):"],
+      ["c-dim", "    [matched -> partial] EDD is calculated from LMP using Naegele's rule."],
+      ["c-dim", "      now: src/core/PregnancyCalculator.php:10: public static function calculateEDC(string $lmpDate): string"],
+      ["c-dim", ""],
+      ["c-dim", "  vs previous run: 3 unchanged, 0 added, 0 resolved, 1 drifted"],
+      ["c-dim", "Ledger saved: memory/.saphene/ledger.json"],
+      ["c-info", "Your notes said matched this morning. The disk disagrees now. That gap is the whole product."]
+    ]
+  };
+
+  var DRIFT = [
+    ["c-dim", ""],
+    ["c-bad", "  ⚠ DRIFT INJECTED — rerunning bridge against the drifted tree..."],
+    ["c-bad", "  [matched -> unfound] A Compassion Policy suspends penalties and grants grace periods"],
+    ["c-dim", "      searched D:/Projects/Agapay for \"CompassionActionType\""],
+    ["c-warn", "  exit code 1 — the PR gate blocks this merge, and the ledger records who broke it, when."]
+  ];
+
+  var current = "bridge";
+  var token = 0;
+  var drifting = false;
+
+  function stopDriftHint() {
+    var hint = document.querySelector(".psst");
+    if (hint) { hint.textContent = "you found it"; hint.style.color = "var(--muted)"; }
+  }
+
+  function typeScript(script, done) {
+    var my = ++token;
+    term.innerHTML = "";
+    var i = 0;
+    function nextLine() {
+      if (my !== token) return;
+      if (i >= script.length) { if (done) done(); return; }
+      var line = script[i++];
+      var el = document.createElement("span");
+      el.className = "ln " + line[0];
+      term.appendChild(el);
+      var text = line[1];
+      var j = 0;
+      var speed = line[0] === "c-cmd" ? 24 : 5;
+      (function tick() {
+        if (my !== token) return;
+        if (j < text.length) {
+          var take = line[0] === "c-cmd" ? 1 : Math.min(text.length - j, 9);
+          el.textContent = text.slice(0, j + take);
+          j += take;
+          setTimeout(tick, speed);
+        } else {
+          setTimeout(nextLine, line[0] === "c-cmd" ? 160 : 42);
+        }
+      })();
+    }
+    nextLine();
+  }
+
+  function showTab(name) {
+    current = name;
+    drifting = false;
+    document.querySelectorAll(".term-tabs button").forEach(function (b) {
+      var on = b.dataset.tab === name;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    typeScript(SCRIPTS[name].slice());
+  }
+
+  function injectDrift() {
+    if (drifting) return;
+    drifting = true;
+    stopDriftHint();
+    var my = ++token;
+    term.innerHTML = "";
+    var full = SCRIPTS[current].concat(DRIFT);
+    var i = 0;
+    function nextLine() {
+      if (my !== token) return;
+      if (i >= full.length) return;
+      var line = full[i++];
+      var el = document.createElement("span");
+      el.className = "ln " + line[0];
+      term.appendChild(el);
+      el.textContent = line[1];
+      setTimeout(nextLine, 70);
+    }
+    nextLine();
+  }
+
+  document.querySelectorAll(".term-tabs button").forEach(function (b) {
+    b.addEventListener("click", function () { showTab(b.dataset.tab); });
+  });
+
+  document.addEventListener("keydown", function (e) {
+    var t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+    if (e.key === "d" || e.key === "D") {
+      var rect = term.getBoundingClientRect();
+      if (rect.top < window.innerHeight && rect.bottom > 0) injectDrift();
+    }
+  });
+
+  document.querySelectorAll(".copy").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var text = b.dataset.copy || "";
+      if (navigator.clipboard) navigator.clipboard.writeText(text).catch(function () {});
+      toast.classList.add("show");
+      setTimeout(function () { toast.classList.remove("show"); }, 1400);
+    });
+  });
+
+  document.querySelectorAll(".loop-step").forEach(function (step) {
+    step.addEventListener("click", function () {
+      document.querySelectorAll(".loop-step").forEach(function (s) { s.classList.remove("on"); });
+      step.classList.add("on");
+    });
+  });
+
+  var nav = document.getElementById("topnav");
+  window.addEventListener("scroll", function () {
+    nav.classList.toggle("scrolled", window.scrollY > 8);
+  }, { passive: true });
+
+  showTab("bridge");
+})();
+</script>
 </body>
 </html>

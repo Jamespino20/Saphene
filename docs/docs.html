@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Docs — Saphene</title>
+<meta name="description" content="Saphene documentation: commands, claims format, ledger and drift, model configuration, MCP setup, GitHub Actions, and the continuous audit loop.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans+Mono:ital,wght@0,400;0,600;0,700;1,400&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+
+<nav class="top" id="topnav">
+  <a class="logo" href="index.html">saphene<em>_</em></a>
+  <div class="links">
+    <a href="index.html">Home</a>
+    <a href="index.html#demo">Demo</a>
+    <a href="index.html#loop">The Loop</a>
+    <a class="active" href="docs.html">Docs</a>
+    <a class="cta" href="https://github.com/Jamespino20/Saphene">GitHub</a>
+  </div>
+</nav>
+
+<div class="docs-layout">
+  <aside class="docs-toc" id="toc">
+    <a href="#quickstart">Quickstart</a>
+    <a href="#concepts">Concepts</a>
+    <a href="#commands">Commands</a>
+    <a href="#claims">Claims file format</a>
+    <a href="#model">Model configuration</a>
+    <a href="#ledger">Ledger & drift</a>
+    <a href="#audit">The audit panel</a>
+    <a href="#mcp">MCP setup</a>
+    <a href="#actions">GitHub Actions</a>
+    <a href="#cycle">The continuous loop</a>
+    <a href="#exits">Exit codes</a>
+    <a href="#faq">FAQ</a>
+  </aside>
+
+  <div class="docs-body">
+    <h1 style="font-size:36px; margin-bottom:8px;">Documentation</h1>
+    <p class="lead" style="margin-bottom:8px;">Everything a developer needs to run Saphene on a real repository in under five minutes — and keep it running forever after.</p>
+
+    <h2 id="quickstart">Quickstart</h2>
+    <pre class="block">git clone https://github.com/Jamespino20/Saphene.git
+cd Saphene
+npm install
+
+# 1. scaffold a memory directory (or skip — point at any folder of .md files)
+npm run init -- --memory-dir ./memory
+
+# 2. write a claims file (see format below), then verify it against a repo
+npm run bridge -- examples/matriflow-claims.md --repo D:/Projects/your-repo
+
+# 3. audit the repo's code with the reviewer panel
+npm run audit -- --repo D:/Projects/your-repo --update-ledger
+
+# 4. run the self-test to confirm your install
+npm test</pre>
+    <p>No model key? Everything deterministic still works — extraction falls back to the heuristic parser and <code>--no-model</code> forces it anywhere.</p>
+
+    <h2 id="concepts">Concepts</h2>
+    <table>
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td><b>Claim</b></td><td>A single testable statement extracted from memory, a spec, or a document — with 1–3 <i>expected evidence</i> strings: literal text that would appear in the codebase if the claim is true.</td></tr>
+      <tr><td><b>Evidence surface</b></td><td>Where the grep loop looks: the source file (memory mode), or target repos/files (bridge mode). <code>--code-only</code> restricts targets to implementation extensions so specs can't testify for themselves.</td></tr>
+      <tr><td><b>Verdict</b></td><td><span class="ok">matched</span> (all evidence located) · <span class="warn">partial</span> (some) · <span class="no">unfound</span> (none) · mismatch (contradicted). Every verdict carries a <code>file:line</code> citation.</td></tr>
+      <tr><td><b>Ledger</b></td><td>Persisted verdicts with stable IDs (<code>.saphene/ledger.json</code>). Re-running diffs against it — the mechanism behind drift detection.</td></tr>
+      <tr><td><b>Drift</b></td><td>A status regression between runs: something that was <span class="ok">matched</span> stopped being true. The ledger records what, when, and the citation that changed.</td></tr>
+      <tr><td><b>Finding</b></td><td>An audit observation from a reviewer persona: severity, category, verbatim quote (grep-verified), long-term impact, open questions, fix direction.</td></tr>
+    </table>
+
+    <h2 id="commands">Commands</h2>
+    <table>
+      <tr><th>Command</th><th>What it does</th><th>Key flags</th></tr>
+      <tr><td><code>npm run init</code></td><td>Scaffold a memory directory</td><td><code>--personal</code> (category folders), <code>--memory-dir <path></code></td></tr>
+      <tr><td><code>npm run verify</code></td><td>Verify one file's claims (against itself in memory mode)</td><td><code>--no-model</code>, adapter: <code>memory|paper|helm</code></td></tr>
+      <tr><td><code>npm run bridge</code></td><td>Verify claims against external targets</td><td><code>--repo</code> (repeatable), <code>--paper</code>, <code>--code-only</code>, <code>--exclude <name></code>, <code>--out</code></td></tr>
+      <tr><td><code>npm run memory</code></td><td>Audit every <code>.md</code> in a memory dir; ledger + drift diff</td><td><code>--memory-dir</code>, <code>--repo</code>, <code>--paper</code>, <code>--no-model</code></td></tr>
+      <tr><td><code>npm run audit</code></td><td>Persona-panel code & business-flow audit; markdown report</td><td><code>--repo</code>, <code>--focus code|flow|all</code>, <code>--max-files</code>, <code>--out-dir</code>, <code>--report</code>, <code>--update-ledger</code></td></tr>
+      <tr><td><code>npm run review</code></td><td>PR gate: diff verdicts against a committed baseline</td><td><code>--claims</code>, <code>--repo</code>, <code>--ledger</code>, <code>--update-ledger</code></td></tr>
+      <tr><td><code>npm run drift</code></td><td>Inject a drift into a copy of a file; report detection</td><td><code><good> <drifted> <text></code></td></tr>
+      <tr><td><code>npm run mcp</code></td><td>Run the MCP stdio server (agent plugin)</td><td>tools: <code>saphene_bridge</code>, <code>saphene_memory</code>, <code>saphene_verify</code></td></tr>
+      <tr><td><code>npm test</code></td><td>7-check selftest, no model needed</td><td>—</td></tr>
+    </table>
+
+    <h2 id="claims">Claims file format</h2>
+    <p>Saphene's heuristic parser reads structured claim blocks — and the model extractor outputs the same shape. One claim per <code>-</code> bullet, metadata lines below it:</p>
+    <pre class="block">- Expected delivery date is calculated from LMP using Naegele's rule.
+  category: srs | srsClause: 5.3.2 | requirementType: functional | priority: mandatory
+  evidence: calculateEDC, Naegele, lmp_date</pre>
+    <p><b>Good evidence strings</b> are literal and specific: identifiers, table names, function names, exact phrases. <b>Bad evidence</b> is paraphrase — the grep loop can't find what isn't written. Categories: <code>fact</code>, <code>config</code>, <code>numeric</code>, <code>path</code>, <code>behavior</code>, <code>srs</code>. Requirement types (for SRS claims): functional, performance, safety, security, interface, operational, constraint, quality.</p>
+
+    <h2 id="model">Model configuration</h2>
+    <p>Any OpenAI-compatible endpoint works. Create <code>.env</code> (gitignored):</p>
+    <pre class="block">MODEL_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+MODEL_API_KEY=your-key
+MODEL_NAME=gemini-3.5-flash
+MODEL_FALLBACK=gemini-3.1-flash-lite</pre>
+    <p>Calls retry with backoff (3× per model) and fall through the chain on repeated failure. Free tiers work — Saphene's own public CI runs on one. In GitHub Actions, set the key as the <code>SAPHENE_API_KEY</code> secret; the workflow writes <code>.env</code> from it automatically and runs heuristic mode when absent.</p>
+
+    <h2 id="ledger">Ledger & drift</h2>
+    <p>Claim IDs are deterministic hashes of <code>source::text</code> (audit findings: <code>file::reviewer::title</code>) — stable across runs and machines. Each ledgered run records status, citation, and timestamp; the next run diffs:</p>
+    <table>
+      <tr><th>Transition</th><th>Classification</th></tr>
+      <tr><td>matched → partial / unfound / mismatch</td><td class="no">drift (regression)</td></tr>
+      <tr><td>partial → unfound / mismatch</td><td class="no">drift (regression)</td></tr>
+      <tr><td>unfound ↔ mismatch</td><td class="no">drift (escalation)</td></tr>
+      <tr><td>unfound / partial / mismatch → matched</td><td class="ok">resolved</td></tr>
+      <tr><td>same status</td><td>unchanged</td></tr>
+    </table>
+    <p>Drift exits nonzero — which is exactly why the GitHub Action can fail a build on it.</p>
+
+    <h2 id="audit">The audit panel</h2>
+    <p>One model call per file returns findings from four independent reviewers, run three files at a time. Findings are only believed after their verbatim quote is located in the file by grep — otherwise they're demoted to <code>partial</code> and flagged. The report includes, per finding:</p>
+    <ul>
+      <li><b>Receipt:</b> the quote and <code>file:line</code></li>
+      <li><b>Long-term impact:</b> what rots, what compounds, what it costs later</li>
+      <li><b>Questions for the developer:</b> what the reviewer would ask before fixing</li>
+      <li><b>Surrounding code:</b> ±8 lines with line numbers</li>
+      <li><b>Fix prompt:</b> paste-ready for any coding agent, with instructions to ask first and state assumptions</li>
+    </ul>
+    <p>Reports default to <code>audits/<repo>-<timestamp>.md</code>; override with <code>--out-dir</code> or <code>--report</code>.</p>
+
+    <h2 id="mcp">MCP setup</h2>
+    <p>Saphene speaks Model Context Protocol over stdio — one server covers VS Code Copilot agent mode, Cursor, Cline, and OpenCode. Start it with <code>npm run mcp</code> and register it:</p>
+    <pre class="block">{
+  "mcp": {
+    "saphene": {
+      "type": "local",
+      "command": ["npx", "tsx", "<path-to-Saphene>/src/mcp.ts"],
+      "enabled": true
+    }
+  }
+}</pre>
+    <p>Tools: <code>saphene_bridge</code> (claims file vs repo → verdicts), <code>saphene_memory</code> (memory dir vs repo → ledger diff + drift), <code>saphene_verify</code> (single file, memory or paper mode). Findings and verdicts return as structured JSON your agent can reason over.</p>
+
+    <h2 id="actions">GitHub Actions</h2>
+    <p>Two workflows ship in <code>.github/workflows/</code>:</p>
+    <table>
+      <tr><th>Workflow</th><th>Trigger</th><th>Behavior</th></tr>
+      <tr><td><code>saphene.yml</code></td><td>push, manual</td><td>Clones target repos, verifies both example claim sets, posts verdict tables to the job summary. Optional <code>SAPHENE_API_KEY</code> secret upgrades it to model extraction.</td></tr>
+      <tr><td><code>saphene-review.yml</code></td><td>pull_request</td><td>Runs the ledger-diff review against committed baselines and comments the delta on the PR. Drift fails the check.</td></tr>
+    </table>
+    <p>For a nightly watch, add a schedule trigger: <code>schedule: [{cron: "0 3 * * *"}]</code> — the ledger diff means you only hear about what changed.</p>
+
+    <h2 id="cycle">The continuous loop</h2>
+    <p>The intended rhythm on a live project:</p>
+    <ol style="margin:12px 0 12px 20px; color:var(--muted); line-height:2;">
+      <li><code>npm run audit -- --repo . --update-ledger</code> — baseline or refresh; findings ledgered</li>
+      <li>Open the report, paste fix prompts into your agent, merge fixes</li>
+      <li><code>npm test</code> + the PR gate confirm documented claims still hold</li>
+      <li>Re-audit — the ledger diff reports <b>resolved</b> vs <b>new</b> vs <b>regressed</b></li>
+      <li>CI re-verifies on every push; the memory write-back records what changed and when</li>
+    </ol>
+    <p>Step 4 is the part nothing else gives you: code health as a changelog, not a vibe. A claim about your system that stops being true — whether it lives in your README, your agent's memory, or your own head — has an exit code now.</p>
+
+    <h2 id="exits">Exit codes</h2>
+    <table>
+      <tr><th>Code</th><th>Meaning</th></tr>
+      <tr><td><code>0</code></td><td>All claims matched / no drift / no critical findings</td></tr>
+      <tr><td><code>1</code></td><td>Unfound, mismatch, or drift present (review needed)</td></tr>
+      <tr><td><code>2</code></td><td>Engine error — model required but unavailable</td></tr>
+    </table>
+
+    <h2 id="faq">FAQ</h2>
+    <p><b>How is this different from a linter or CodeRabbit-style review?</b><br>
+    Linters check style rules; AI reviewers give one-shot impressions. Saphene persists a ledger with stable IDs, so its reviews <i>diff across runs and commits</i>, its verdicts carry grep-verified receipts, and it fails CI on documented-behavior drift — not on taste.</p>
+    <p><b>Why did my "matched" claim cite a TODO comment?</b><br>
+    String evidence can't read negation — a comment saying "would implement X next" contains the words. This is why every verdict ships its citation: you're meant to glance at receipts. The audit panel's model reasoning layer is where semantic judgment lives.</p>
+    <p><b>Does it work without internet?</b><br>
+    The deterministic engine (extract-from-blocks, grep loop, ledger, drift, PR gate, MCP) is fully offline. Only model-backed extraction and the audit panel need the endpoint.</p>
+    <p><b>What stops the audit from hallucinating?</b><br>
+    Quotes must exist verbatim in the cited file — the grep loop checks every one and demotes failures. It's not perfect (a matching TODO comment taught us that), which is why receipts are the product.</p>
+  </div>
+</div>
+
+<footer>
+  <div>Saphene — Clarity Through Evidence · <a href="index.html">home</a> · <a href="https://github.com/Jamespino20/Saphene">GitHub</a> · built by <a href="https://github.com/Jamespino20">James Bryant D. Espino</a></div>
+</footer>
+
+</div>
+<script>
+(function () {
+  "use strict";
+  var nav = document.getElementById("topnav");
+  window.addEventListener("scroll", function () { nav.classList.toggle("scrolled", window.scrollY > 8); }, { passive: true });
+
+  var tocLinks = Array.prototype.slice.call(document.querySelectorAll("#toc a"));
+  var sections = tocLinks.map(function (a) { return document.querySelector(a.getAttribute("href")); });
+  function spy() {
+    var y = window.scrollY + 120, idx = 0;
+    sections.forEach(function (s, i) { if (s && s.offsetTop <= y) idx = i; });
+    tocLinks.forEach(function (a, i) { a.classList.toggle("on", i === idx); });
+  }
+  window.addEventListener("scroll", spy, { passive: true });
+  spy();
+})();
+</script>
+</body>
+</html>
