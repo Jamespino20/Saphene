@@ -10,6 +10,7 @@
     "memory": "tsx src/cli.ts memory",
     "mcp": "tsx src/mcp.ts",
     "review": "tsx src/review.ts",
+    "audit": "tsx src/audit.ts",
     "drift": "tsx src/drift-harness.ts",
     "typecheck": "tsc --noEmit"
   },

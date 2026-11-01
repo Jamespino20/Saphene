@@ -80,7 +80,9 @@ npm run bridge -- claims.md --repo ../your-repo<br><br>
 <span class="c"># audit a whole memory directory against a repo, ledger + drift diff</span><br>
 npm run memory -- --memory-dir ./memory --repo ../your-repo<br><br>
 <span class="c"># audit against <span class="g">implementation code only</span> — specs can't testify for themselves</span><br>
-npm run bridge -- claims.md --repo ../your-repo --code-only
+npm run bridge -- claims.md --repo ../your-repo --code-only<br><br>
+<span class="c"># code + business-flow audit: model finds the rot, ledger remembers it</span><br>
+npm run audit -- --repo ../your-repo --update-ledger
 </div>
 
 <h2>Case study: auditing a failed project</h2>
@@ -104,6 +106,7 @@ npm run bridge -- claims.md --repo ../your-repo --code-only
   <div class="card"><h3>Agent plugin via MCP</h3><p>One stdio server covers VS Code Copilot agent mode, Cursor, Cline, and OpenCode: <code>saphene_bridge</code>, <code>saphene_memory</code>, <code>saphene_verify</code>. Agents stop guessing; they call the ledger.</p></div>
   <div class="card"><h3>GitHub Action</h3><p>Clones your target repos on every push, verifies claims, posts the verdict table to the job summary. Fails on drift. <a href="https://github.com/Jamespino20/Saphene/actions">See it green →</a></p></div>
   <div class="card"><h3>Model-backed extraction</h3><p>Any OpenAI-compatible endpoint. Retry with backoff, fallback model chain, heuristic mode when no key is present. Your memory becomes structured claims; the evidence loop stays deterministic.</p></div>
+  <div class="card"><h3>Code & business-flow audit</h3><p>The model hunts bugs, security holes, and dead-end workflows; every finding's quote is re-verified by grep before it's believed, then ledgered — so re-audits diff code rot across commits.</p></div>
 </div>
 
 <footer>

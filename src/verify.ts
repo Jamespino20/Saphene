@@ -31,7 +31,7 @@ const TEXT_EXTS = new Set([
 const MAX_FILE_BYTES = 512_000;
 const MAX_FILES_PER_DIR_SCAN = 2000;
 
-function grepLine(file: string, needle: string, caseInsensitive = false): string | null {
+export function grepLine(file: string, needle: string, caseInsensitive = false): string | null {
   if (!existsSync(file) || !statSync(file).isFile()) return null;
   const content = readFileSync(file, "utf8");
   const lines = content.split(/\r?\n/);
