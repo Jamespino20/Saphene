@@ -117,11 +117,39 @@ export default function TerminalDemo() {
 
   return (
     <section id="demo" className="pt-8">
-      <h2 className="mb-2.5 font-mono text-[clamp(22px,3.2vw,30px)] tracking-[-0.02em]">Watch it work</h2>
+      <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-accent">Live verification / Agapay</p>
+          <h2 className="font-mono text-[clamp(22px,3.2vw,30px)] tracking-[-0.02em]">Watch it work</h2>
+        </div>
+        <a
+          href="https://github.com/Jamespino20/Agapay"
+          className="font-mono text-xs text-muted transition-colors hover:text-accent"
+        >
+          github.com/Jamespino20/Agapay ↗
+        </a>
+      </div>
       <p className="mb-6 max-w-[680px] text-[17.5px] text-muted">
-        Three surfaces, one discipline: no verdict without a citation. Switch tabs to compare claim verification, the
+        Real claims from the Agapay project, checked against its repository. It was a rich but failed project that never
+        had Saphene to test its promises. No verdict without a citation. Switch tabs to compare claim verification, the
         audit panel, and memory drift watch.
       </p>
+
+      <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
+        {[
+          ["matched", "8", "bg-accent", "text-accent"],
+          ["partial", "2", "bg-warn", "text-warn"],
+          ["unfound", "1", "bg-bad", "text-bad"],
+        ].map(([label, count, dot, text]) => (
+          <div key={label} className="rounded-lg border border-line bg-surface px-3 py-3 sm:px-4">
+            <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-muted">
+              <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+              {label}
+            </div>
+            <div className={`mt-1 font-mono text-xl font-bold ${text}`}>{count}</div>
+          </div>
+        ))}
+      </div>
 
       <div
         ref={boxRef}
@@ -178,7 +206,7 @@ export default function TerminalDemo() {
       <p className="mt-3.5 text-[13.5px] text-muted">
         Output above is a faithful replay of real Saphene runs against{" "}
         <a className="text-accent hover:underline" href="https://github.com/Jamespino20/Agapay">
-          a real dormant repository
+          the real Agapay repository
         </a>
         , compressed for the page. Press <kbd className="rounded border border-line px-1.5 font-mono text-xs">D</kbd> to
         inject drift.

@@ -11,7 +11,7 @@ export default function Loop() {
       <div className="max-w-[1020px] mx-auto px-7">
         <div className="text-center mb-16">
           <h2 className="font-mono text-[clamp(28px,5vw,40px)] font-bold tracking-tight">How the loop works</h2>
-          <p className="text-muted mt-4">Extract verify re-verify. Every change is compared to the last.</p>
+          <p className="mt-4 text-muted">Extract - verify - ledger - re-verify. Every change is compared to the last.</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {STEPS.map((s) => (

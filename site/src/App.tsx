@@ -24,7 +24,7 @@ export default function App() {
               Live demo
             </a>
             <span className="text-[#2a3a50]">|</span>
-            <a href="#docs" className="hover:text-accent transition-colors">
+            <a href="/docs.html" className="hover:text-accent transition-colors">
               Docs
             </a>
           </div>

@@ -4,6 +4,7 @@ const LINKS = [
   { href: "#demo", label: "Demo" },
   { href: "#loop", label: "The Loop" },
   { href: "#who", label: "Who is this for?" },
+  { href: "/docs.html", label: "Docs" },
   { href: "https://github.com/Jamespino20/Saphene", label: "GitHub" },
 ];
 
@@ -25,7 +26,7 @@ export default function Nav() {
       <a href="#" className="font-mono text-[17px] font-bold tracking-wide text-ink">
         saphene<span className="text-accent">_</span>
       </a>
-      <div className="flex items-center gap-6 text-sm">
+      <div className="hidden items-center gap-6 text-sm md:flex">
         {LINKS.map((l) => (
           <a key={l.label} href={l.href} className="text-muted transition-colors hover:text-ink">
             {l.label}
@@ -38,6 +39,12 @@ export default function Nav() {
           GitHub
         </a>
       </div>
+      <a
+        href="https://github.com/Jamespino20/Saphene"
+        className="rounded-lg bg-accent px-3.5 py-1.5 text-sm font-semibold text-[#052e16] transition-colors hover:bg-accent-dim md:hidden"
+      >
+        GitHub
+      </a>
     </nav>
   );
 }

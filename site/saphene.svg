@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   version="1.1"
+   id="svg1"
+   width="730.46515"
+   height="978.2663"
+   viewBox="0 0 730.46515 978.2663"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <g
+     id="layer1"
+     transform="translate(-156.59113,-17.774248)">
+    <path
+       style="display:inline;fill:#8c8f5f;fill-opacity:1;stroke-width:1.002"
+       d="M 887.05628,212.4253 885.8393,394.47215 707.68346,297.47592 Z"
+       id="path27" />
+    <path
+       style="display:inline;fill:#bfcd7f;fill-opacity:1;stroke-width:1.002"
+       d="M 526.17397,17.774249 887.05556,212.43927 707.86061,297.57714 526.23314,193.79002 Z"
+       id="path26" />
+    <path
+       style="display:inline;fill:#d6e3b8;fill-opacity:1;stroke-width:1.002"
+       d="M 526.1787,17.782217 526.23904,193.26711 319.78183,296.77958 156.92706,211.59401 Z"
+       id="path28" />
+    <path
+       style="fill:#a4c882;fill-opacity:1;stroke-width:1.002"
+       d="M 156.94523,211.57956 525.04132,403.65154 525.58367,598.42808 156.59112,395.23599 Z"
+       id="path30" />
+    <path
+       style="fill:#4b8368;fill-opacity:1;stroke-width:1.002"
+       d="M 707.88281,297.58594 525.11611,403.71966 319.5,296.5 526.23828,193.25781 Z"
+       id="path34" />
+    <path
+       style="fill:#6ea787;fill-opacity:1;stroke-width:1.002"
+       d="M 525.04419,403.58839 886.5,599.5 711,693.5 525.5,598 Z"
+       id="path35" />
+    <path
+       style="fill:#c88b42;fill-opacity:1;stroke-width:1.002"
+       d="m 886.48121,599.50523 -0.7304,191.94242 -174.86738,-97.87057 z"
+       id="path36" />
+    <path
+       style="fill:#eeb250;fill-opacity:1;stroke-width:1.002"
+       d="m 710.96868,693.4628 174.78795,97.96156 -351.10853,204.5962 0.18566,-194.19638 z"
+       id="path37" />
+    <path
+       style="fill:#4b8368;fill-opacity:1;stroke-width:1.002"
+       d="M 708.75,297.5 526.13258,403.98483 319.5,296.5 523.86761,192.26136 Z"
+       id="path40"
+       transform="matrix(0.98291555,-0.03307083,0.03369349,0.96475127,4.2157318,429.94264)" />
+    <path
+       style="fill:#2c6054;fill-opacity:1;stroke-width:1.002"
+       d="M 362,687.125 534.8125,802.4375 534.64947,996.04055 160.375,792.8125 Z"
+       id="path38" />
+    <path
+       style="fill:#387b6c;fill-opacity:1;stroke-width:1.002"
+       d="m 160.5,793 -2,-219.5 203.75,113.375 z"
+       id="path39" />
+  </g>
+</svg>
