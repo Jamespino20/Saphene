@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spline+Sans+Mono:ital,wght@0,400;0,600;0,700;1,400&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<link rel="icon" type="image/svg+xml" href="saphene.svg">
 </head>
 <body>
 <div class="wrap">
@@ -188,6 +189,35 @@ MODEL_FALLBACK=gemini-3.1-flash-lite</pre>
   "use strict";
   var nav = document.getElementById("topnav");
   window.addEventListener("scroll", function () { nav.classList.toggle("scrolled", window.scrollY > 8); }, { passive: true });
+
+  var toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = "copied to clipboard";
+  document.body.appendChild(toast);
+
+  document.querySelectorAll("pre.block").forEach(function (pre) {
+    var bar = document.createElement("div");
+    bar.style.cssText = "display:flex;justify-content:flex-end;padding:0 0 8px;";
+    var btn = document.createElement("button");
+    btn.className = "copy";
+    btn.textContent = "copy";
+    btn.style.cssText = "position:static;opacity:1;";
+    btn.addEventListener("click", function () {
+      if (navigator.clipboard) navigator.clipboard.writeText(pre.textContent).catch(function () {});
+      toast.classList.add("show");
+      setTimeout(function () { toast.classList.remove("show"); }, 1400);
+    });
+    bar.appendChild(btn);
+    pre.parentNode.insertBefore(bar, pre);
+  });
+
+  document.querySelectorAll("table").forEach(function (t) {
+    var rows = t.querySelectorAll("tr");
+    if (rows.length) {
+      var ths = rows[0].querySelectorAll("th");
+      ths.forEach(function (th) { th.setAttribute("scope", "col"); });
+    }
+  });
 
   var tocLinks = Array.prototype.slice.call(document.querySelectorAll("#toc a"));
   var sections = tocLinks.map(function (a) { return document.querySelector(a.getAttribute("href")); });
