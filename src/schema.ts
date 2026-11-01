@@ -29,7 +29,11 @@ export interface Claim {
   status: VerdictStatus;
   evidence: Evidence[];
   verifiedAt?: string;
+  srsClause?: string;
+  requirementType?: string;
+  priority?: string;
 }
+
 
 export interface AdapterResult {
   adapter: "memory" | "paper" | "helm";
@@ -49,6 +53,7 @@ export interface Verdict {
 export interface TraceabilityRow {
   claimId: string;
   srsClause: string;
+  requirementType: string;
   status: VerdictStatus;
   citation: string;
 }

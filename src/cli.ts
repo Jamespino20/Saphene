@@ -8,6 +8,7 @@ import { runAdapter } from "./verify.js";
 import { loadLedger, saveLedger, diffLedger, scanMemoryFiles, sleep, type Ledger, type LedgerEntry } from "./ledger.js";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, basename } from "node:path";
+import { type TraceabilityRow } from "./schema.js";
 
 const args = process.argv.slice(2);
 const command = args.find((a) => a === "verify" || a === "init" || a === "bridge") ?? args[0];

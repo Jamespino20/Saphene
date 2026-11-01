@@ -1,24 +1,24 @@
-import type { ClaimCategory, VerdictStatus } from "../schema";
+import type { Claim, ClaimCategory, Evidence, TraceabilityRow, Verdict, VerdictStatus } from "./schema.js";
 import { extractClaims, extractClaimsViaModel, getModelConfig } from "./extract.js";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, statSync, readdirSync } from "node:fs";
 import { join, extname } from "node:path";
-import { grepLine } from "./verify.js";
 
 export interface AdapterOptions {
   useModel?: boolean;
   targets?: string[];
-}
-
-export interface VerifyOptions {
   includeSource?: boolean;
+  excludeFiles?: string[];
+  codeOnly?: boolean;
 }
 
 const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".venv", "__pycache__", ".idea", ".vscode"]);
+const SKIP_FILES = new Set(["package-lock.json", "package.json", "tsconfig.json", "tsconfig.node.json"]);
 const TEXT_EXTS = new Set([".md", ".txt", ".ts", ".tsx", ".js", ".jsx", ".json", ".php", ".sql", ".html", ".css", ".scss", ".csv", ".prisma", ".xml", ".env.example", ".htaccess"]);
+const CODE_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".cjs", ".mjs", ".py", ".rs", ".go", ".java", ".rb", ".php", ".cs"]);
 const MAX_FILE_BYTES = 512_000;
 const MAX_FILES_PER_DIR_SCAN = 2000;
 
-function grepLine(file: string, needle: string, caseInsensitive = false): string | null {
+export function grepLine(file: string, needle: string, caseInsensitive = false): string | null {
   if (!existsSync(file) || !statSync(file).isFile()) return null;
   const content = readFileSync(file, "utf8");
   const lines = content.split(/\r?\n/);
@@ -58,13 +58,7 @@ function searchDir(dir: string, needle: string, budget: { count: number }, exclu
       if (SKIP_DIRS.has(name)) continue;
       const hit = searchDir(full, needle, budget, exclude, codeOnly);
       if (hit) return hit;
-    } else if (
-      stat.isFile() &&
-      stat.size <= MAX_FILE_BYTES &&
-      isScannable(name, codeOnly) &&
-      !SKIP_FILES.has(name.toLowerCase()) &&
-      !exclude.has(name.toLowerCase())
-    ) {
+    } else if (stat.isFile() && stat.size <= MAX_FILE_BYTES && isScannable(name, codeOnly) && !SKIP_FILES.has(name.toLowerCase()) && !exclude.has(name.toLowerCase())) {
       budget.count -= 1;
       const hit = grepLine(full, needle, true);
       if (hit) return hit;
@@ -88,7 +82,7 @@ export function searchTargets(targets: string[], needle: string, exclude: Readon
   return null;
 }
 
-export function verifyClaim(claim: Claim, targets: string[] = [], options: VerifyOptions = {}): Verdict {
+export function verifyClaim(claim: Claim, targets: string[] = [], options: AdapterOptions = {}): Verdict {
   const includeSource = options.includeSource ?? true;
   const exclude = new Set((options.excludeFiles ?? []).map((f) => f.toLowerCase()));
   const codeOnly = options.codeOnly ?? false;
