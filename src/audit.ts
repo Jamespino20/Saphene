@@ -35,14 +35,16 @@ let ledgerPath = ".saphene/audit.ledger.json";
 let maxFiles = 12;
 let updateLedger = false;
 let focus = "all";
+let reportPath: string | undefined;
 
 for (let i = 0; i < args.length; i++) {
   switch (args[i]) {
     case "--repo": repoDir = args[++i]; break;
     case "--ledger": ledgerPath = args[++i]; break;
-    case "--max-files": maxFiles = parseInt(args[++i], 10) || maxFiles; break;
+    case "--max-files": maxFiles = parseInt(args[++i] ?? "", 10) || maxFiles; break;
     case "--update-ledger": updateLedger = true; break;
     case "--focus": focus = args[++i] ?? focus; break;
+    case "--report": reportPath = args[++i]; break;
   }
 }
 
@@ -234,6 +236,67 @@ if (updateLedger) {
     entries: Object.fromEntries(entries.map((e) => [e.claimId, e])),
   });
   console.log(`\nLedger saved: ${ledgerPath}`);
+}
+
+if (reportPath) {
+  const esc = (s: string): string => s.replace(/`/g, "'");
+  const byCat = (c: string) => findings.filter((f) => f.category === c).length;
+  const md: string[] = [
+    "# Saphene Audit Report",
+    "",
+    `**Repository:** \`${repoDir}\`  `,
+    `**Generated:** ${new Date().toISOString()}  `,
+    `**Model:** ${cfg!.model} · focus: ${focus} · files scanned: ${checked}  `,
+    `**Findings:** ${findings.length} total — critical ${bySev("critical")} · major ${bySev("major")} · minor ${bySev("minor")}`,
+    "",
+    "| Severity | Count | | Category | Count |",
+    "| --- | --- | --- | --- | --- |",
+    `| critical | ${bySev("critical")} | | bug | ${byCat("bug")} |`,
+    `| major | ${bySev("major")} | | security | ${byCat("security")} |`,
+    `| minor | ${bySev("minor")} | | performance | ${byCat("performance")} |`,
+    `| | | | business-flow | ${byCat("business-flow")} |`,
+    `| | | | incomplete | ${byCat("incomplete")} |`,
+    "",
+    "## How to use this report",
+    "",
+    "1. **Every finding carries a receipt.** The `quote` was re-verified verbatim against the named file before the finding was believed; findings whose quote could not be located are marked `partial` and deserve extra scrutiny.",
+    "2. **Work critical → major → minor.** Security and bug categories first.",
+    "3. **Fix prompts are copy-paste ready.** Paste a finding's fix prompt into any coding agent (Copilot, Cursor, Cline, OpenCode) to generate the patch, then review the diff like you would a colleague's.",
+    "4. **Re-audit to track progress.** Run with `--update-ledger` each time; the ledger diffs findings across runs, so newly introduced issues show up as regressions and fixed ones as resolved.",
+    "",
+    "## Findings",
+    "",
+  ];
+  for (const f of [...findings].sort((a, b) => order[a.severity] - order[b.severity])) {
+    md.push(
+      `### [${f.severity.toUpperCase()}][${f.category}] ${esc(f.title)}`,
+      "",
+      `- **Location:** \`${f.file}:${f.line}\`${f.verified ? "" : " · _quote-unverified (partial)_"}`,
+      `- **Evidence:**`,
+      "```",
+      f.quote.slice(0, 200),
+      "```",
+      `- **Fix direction:** ${esc(f.suggestion) || "—"}`,
+      "",
+      "**Fix prompt** (paste into your agent):",
+      "```text",
+      `In ${f.file} around line ${f.line}, the code currently reads:`,
+      "",
+      f.quote.slice(0, 200),
+      "",
+      `There is a ${f.severity} ${f.category} issue: ${esc(f.title)}.`,
+      esc(f.suggestion),
+      "",
+      "Produce the corrected code for this section. Match the file's existing style and conventions, keep the change minimal and focused on this issue, and do not add comments explaining the fix.",
+      "```",
+      "",
+    );
+  }
+  const { writeFileSync, mkdirSync } = await import("node:fs");
+  const { dirname } = await import("node:path");
+  mkdirSync(dirname(reportPath), { recursive: true });
+  writeFileSync(reportPath, md.join("\n"), "utf8");
+  console.log(`\nReport written: ${reportPath}`);
 }
 
 process.exitCode = bySev("critical") > 0 ? 1 : 0;

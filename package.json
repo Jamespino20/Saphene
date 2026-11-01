@@ -11,6 +11,7 @@
     "mcp": "tsx src/mcp.ts",
     "review": "tsx src/review.ts",
     "audit": "tsx src/audit.ts",
+    "test": "tsx src/selftest.ts",
     "drift": "tsx src/drift-harness.ts",
     "typecheck": "tsc --noEmit"
   },

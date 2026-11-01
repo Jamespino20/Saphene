@@ -2,3 +2,4 @@ node_modules/
 dist/
 .env
 examples/anvilos-memory/
+audit-report.md
