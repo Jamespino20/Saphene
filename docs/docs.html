@@ -54,7 +54,7 @@ npm install
 npm run init -- --memory-dir ./memory
 
 # 2. write a claims file (see format below), then verify it against a repo
-npm run bridge -- examples/matriflow-claims.md --repo D:/Projects/your-repo
+npm run bridge -- examples/agapay-claims.md --repo D:/Projects/your-repo
 
 # 3. audit the repo's code with the reviewer panel
 npm run audit -- --repo D:/Projects/your-repo --update-ledger
@@ -90,9 +90,9 @@ npm test</pre>
 
     <h2 id="claims">Claims file format</h2>
     <p>Saphene's heuristic parser reads structured claim blocks — and the model extractor outputs the same shape. One claim per <code>-</code> bullet, metadata lines below it:</p>
-    <pre class="block">- Expected delivery date is calculated from LMP using Naegele's rule.
-  category: srs | srsClause: 5.3.2 | requirementType: functional | priority: mandatory
-  evidence: calculateEDC, Naegele, lmp_date</pre>
+    <pre class="block">- Multi-tenant isolation uses a schema-per-tenant strategy enforced by a custom Prisma proxy.
+  category: srs | srsClause: 6.1 | requirementType: security | priority: mandatory
+  evidence: proxy.ts, tenant_id, schema</pre>
     <p><b>Good evidence strings</b> are literal and specific: identifiers, table names, function names, exact phrases. <b>Bad evidence</b> is paraphrase — the grep loop can't find what isn't written. Categories: <code>fact</code>, <code>config</code>, <code>numeric</code>, <code>path</code>, <code>behavior</code>, <code>srs</code>. Requirement types (for SRS claims): functional, performance, safety, security, interface, operational, constraint, quality.</p>
 
     <h2 id="model">Model configuration</h2>

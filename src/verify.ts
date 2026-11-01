@@ -1,53 +1,32 @@
-// Evidence tool loop + verdict engine.
-// Greps / reads against the source and any extra targets (repo dirs, paper files),
-// then returns a verdict with a citation. "unfound" is deliberately distinct from "mismatch".
-
-import type { Claim, Evidence, TraceabilityRow, Verdict, VerdictStatus } from "./schema.js";
+import type { ClaimCategory, VerdictStatus } from "../schema";
 import { extractClaims, extractClaimsViaModel, getModelConfig } from "./extract.js";
-import { readFileSync, existsSync, statSync, readdirSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { join, extname } from "node:path";
+import { grepLine } from "./verify.js";
 
 export interface AdapterOptions {
   useModel?: boolean;
   targets?: string[];
-  includeSource?: boolean;
-  excludeFiles?: string[];
-  codeOnly?: boolean;
 }
 
 export interface VerifyOptions {
   includeSource?: boolean;
-  excludeFiles?: string[];
-  codeOnly?: boolean;
 }
 
 const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".venv", "__pycache__", ".idea", ".vscode"]);
-const SKIP_FILES = new Set(["package-lock.json", "yarn.lock", "pnpm-lock.yaml", "LICENSE"]);
-const CODE_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".sql", ".prisma"]);
-const TEXT_EXTS = new Set([
-  ".md", ".txt", ".ts", ".tsx", ".js", ".jsx", ".json", ".php", ".sql", ".html",
-  ".css", ".scss", ".yml", ".yaml", ".csv", ".prisma", ".xml", ".env.example", ".htaccess",
-]);
+const TEXT_EXTS = new Set([".md", ".txt", ".ts", ".tsx", ".js", ".jsx", ".json", ".php", ".sql", ".html", ".css", ".scss", ".csv", ".prisma", ".xml", ".env.example", ".htaccess"]);
 const MAX_FILE_BYTES = 512_000;
 const MAX_FILES_PER_DIR_SCAN = 2000;
 
-export function grepLine(file: string, needle: string, caseInsensitive = false): string | null {
+function grepLine(file: string, needle: string, caseInsensitive = false): string | null {
   if (!existsSync(file) || !statSync(file).isFile()) return null;
   const content = readFileSync(file, "utf8");
   const lines = content.split(/\r?\n/);
-  const shortNeedle = needle.length < 5;
-  const pattern = shortNeedle
-    ? new RegExp("\\b" + needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), caseInsensitive ? "i" : "")
-    : null;
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const hit = pattern
-      ? pattern.test(line)
-      : caseInsensitive
-        ? line.toLowerCase().includes(needle.toLowerCase())
-        : line.includes(needle);
-    if (hit) {
-      return `${file}:${i + 1}: ${line.trim()}`;
+    const hay = caseInsensitive ? lines[i].toLowerCase() : lines[i];
+    const pin = caseInsensitive ? needle.toLowerCase() : needle;
+    if (hay.includes(pin)) {
+      return `${file}:${i + 1}: ${lines[i].trim()}`;
     }
   }
   return null;
@@ -170,6 +149,7 @@ export async function runAdapter(
   const targets = options.targets ?? [];
   const includeSource = options.includeSource ?? true;
   let claims = extractClaims(source, content);
+
   if (options.useModel) {
     const cfg = getModelConfig();
     if (cfg) {
@@ -199,6 +179,5 @@ export async function runAdapter(
       };
     });
 
-  void adapter;
   return { claims, verdicts, traceability };
 }
