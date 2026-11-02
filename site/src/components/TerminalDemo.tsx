@@ -27,7 +27,9 @@ export function AgapayTerminalDemo() {
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const reduced = useMemo(
-    () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
     [],
   );
 
@@ -100,7 +102,11 @@ export function AgapayTerminalDemo() {
             <span className="text-amber font-semibold">Agapay Live Run</span>
           </div>
 
-          <div role="tablist" aria-label="Agapay surfaces" className="flex gap-1">
+          <div
+            role="tablist"
+            aria-label="Agapay surfaces"
+            className="flex gap-1"
+          >
             {TABS.map((t, i) => (
               <button
                 key={t.id}
@@ -135,7 +141,9 @@ export function AgapayTerminalDemo() {
               <span className="h-2 w-2 rounded-full bg-line-strong" />
               <span className="h-2 w-2 rounded-full bg-line-strong" />
               <span className="h-2 w-2 rounded-full bg-line-strong" />
-              <span className="ml-2 font-mono text-[10.5px] text-muted">agapay / target-repo</span>
+              <span className="ml-2 font-mono text-[10.5px] text-muted">
+                agapay / target-repo
+              </span>
             </div>
             <button
               onClick={injectDrift}
@@ -148,7 +156,9 @@ export function AgapayTerminalDemo() {
           <div className="min-h-[260px] max-h-[260px] whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed overflow-y-auto">
             <span className="text-muted">$ </span>
             <span className="text-ink font-semibold">{cmdText}</span>
-            {!done && <span className="terminal-caret inline-block h-3.5 w-1 bg-amber align-middle ml-1" />}
+            {!done && (
+              <span className="terminal-caret inline-block h-3.5 w-1 bg-amber align-middle ml-1" />
+            )}
             {shown.map(([kind, text], i) => (
               <span key={i} className={`block ${LINE_CLASS[kind as LineKind]}`}>
                 {text === "" ? "\u00A0" : text}
@@ -159,14 +169,16 @@ export function AgapayTerminalDemo() {
       </div>
 
       <div className="mt-3.5 flex items-center justify-between text-[11px] font-mono text-muted">
-        <span>Citations: <strong className="text-sage">prisma/init.sql</strong></span>
+        <span>
+          Citations: <strong className="text-sage">prisma/init.sql</strong>
+        </span>
         <a
           href="https://github.com/Jamespino20/Agapay"
           target="_blank"
           rel="noopener noreferrer"
           className="text-amber hover:underline"
         >
-          Inspect Agapay Repo â†—
+          Inspect Agapay Repo &rarr;
         </a>
       </div>
     </div>
@@ -185,7 +197,9 @@ export function SapheneSelfTerminalDemo() {
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const reduced = useMemo(
-    () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
     [],
   );
 
@@ -233,7 +247,8 @@ export function SapheneSelfTerminalDemo() {
     const dir = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
     if (!dir) return;
     e.preventDefault();
-    const next = (idx + dir + SAPHENE_SELF_TABS.length) % SAPHENE_SELF_TABS.length;
+    const next =
+      (idx + dir + SAPHENE_SELF_TABS.length) % SAPHENE_SELF_TABS.length;
     tabRefs.current[next]?.focus();
     setTab(SAPHENE_SELF_TABS[next].id as SapheneTabId);
   };
@@ -248,7 +263,11 @@ export function SapheneSelfTerminalDemo() {
             <span className="text-sage font-semibold">Self-Audit Engine</span>
           </div>
 
-          <div role="tablist" aria-label="Saphene surfaces" className="flex gap-1">
+          <div
+            role="tablist"
+            aria-label="Saphene surfaces"
+            className="flex gap-1"
+          >
             {SAPHENE_SELF_TABS.map((t, i) => (
               <button
                 key={t.id}
@@ -280,7 +299,9 @@ export function SapheneSelfTerminalDemo() {
               <span className="h-2 w-2 rounded-full bg-line-strong" />
               <span className="h-2 w-2 rounded-full bg-line-strong" />
               <span className="h-2 w-2 rounded-full bg-line-strong" />
-              <span className="ml-2 font-mono text-[10.5px] text-muted">saphene / self-verification</span>
+              <span className="ml-2 font-mono text-[10.5px] text-muted">
+                saphene / self-verification
+              </span>
             </div>
             <span className="font-mono text-[10px] text-sage font-bold uppercase tracking-wider">
               7/7 Checks Passed
@@ -290,7 +311,9 @@ export function SapheneSelfTerminalDemo() {
           <div className="min-h-[260px] max-h-[260px] whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed overflow-y-auto">
             <span className="text-muted">$ </span>
             <span className="text-ink font-semibold">{cmdText}</span>
-            {!done && <span className="terminal-caret inline-block h-3.5 w-1 bg-green align-middle ml-1" />}
+            {!done && (
+              <span className="terminal-caret inline-block h-3.5 w-1 bg-green align-middle ml-1" />
+            )}
             {shown.map(([kind, text], i) => (
               <span key={i} className={`block ${LINE_CLASS[kind as LineKind]}`}>
                 {text === "" ? "\u00A0" : text}
@@ -301,14 +324,17 @@ export function SapheneSelfTerminalDemo() {
       </div>
 
       <div className="mt-3.5 flex items-center justify-between text-[11px] font-mono text-muted">
-        <span>Verified Against: <strong className="text-green">Root Codebase AST</strong></span>
+        <span>
+          Verified Against:{" "}
+          <strong className="text-green">Root Codebase AST</strong>
+        </span>
         <a
           href="https://github.com/Jamespino20/Saphene"
           target="_blank"
           rel="noopener noreferrer"
           className="text-sage hover:underline"
         >
-          Inspect Saphene Repo â†—
+          Inspect Saphene Repo &rarr;
         </a>
       </div>
     </div>
@@ -316,4 +342,3 @@ export function SapheneSelfTerminalDemo() {
 }
 
 export default AgapayTerminalDemo;
-
