@@ -116,7 +116,8 @@ export default function TerminalDemo() {
   };
 
   return (
-    <section id="demo" className="pt-8">
+    <section id="demo" className="bg-bg py-24">
+      <div className="mx-auto max-w-[1180px] px-6">
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-accent">Live verification / Agapay</p>
@@ -211,6 +212,7 @@ export default function TerminalDemo() {
         , compressed for the page. Press <kbd className="rounded border border-line px-1.5 font-mono text-xs">D</kbd> to
         inject drift.
       </p>
+      </div>
     </section>
   );
 }
