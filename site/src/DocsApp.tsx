@@ -1,19 +1,21 @@
+import { useState } from "react";
+
 const sections = [
   ["quickstart", "Quickstart"],
-  ["concepts", "Concepts"],
-  ["commands", "Commands"],
-  ["claims", "Claims file format"],
-  ["ledger", "Ledger and drift"],
-  ["audit", "The audit panel"],
-  ["mcp", "MCP setup"],
+  ["walkthrough", "End-to-End Walkthrough"],
+  ["concepts", "Core Concepts"],
+  ["commands", "CLI Reference"],
+  ["claims", "Claims Format"],
+  ["ledger", "Ledger & Drift"],
+  ["audit", "Audit Panel"],
+  ["mcp", "MCP Setup"],
   ["actions", "GitHub Actions"],
-  ["cycle", "The continuous loop"],
   ["faq", "FAQ"],
 ];
 
 const commands = [
   ["npm run init", "Scaffold a memory directory with starter claims."],
-  ["npm run verify", "Verify one file's claims against evidence."],
+  ["npm run verify", "Verify one file's claims against repository evidence."],
   ["npm run bridge", "Verify claims against external target repositories."],
   ["npm run memory", "Audit a memory directory and compare its ledger."],
   ["npm run audit", "Run the reviewer-persona code and business-flow panel."],
@@ -22,11 +24,33 @@ const commands = [
   ["npm test", "Run the deterministic 7-check self-test suite."],
 ];
 
+/**
+ * Interactive Code snippet box with copy-to-clipboard functionality
+ */
 function Code({ children }: { children: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(children);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <pre className="overflow-x-auto rounded-xl border border-line-strong bg-surface-2 p-5 font-mono text-xs sm:text-sm leading-7 text-muted shadow-lg">
-      <code className="text-ink">{children}</code>
-    </pre>
+    <div className="relative group my-4">
+      <div className="absolute right-3 top-3 z-10">
+        <button
+          onClick={handleCopy}
+          className="rounded-lg border border-line-strong bg-surface px-2.5 py-1 font-mono text-xs text-muted hover:border-sage hover:text-sage transition-all opacity-80 group-hover:opacity-100 shadow-sm"
+          title="Copy code to clipboard"
+        >
+          {copied ? "✓ Copied" : "Copy"}
+        </button>
+      </div>
+      <pre className="overflow-x-auto rounded-xl border border-line-strong bg-surface-2 p-5 font-mono text-xs sm:text-sm leading-relaxed text-muted shadow-lg">
+        <code className="text-ink">{children}</code>
+      </pre>
+    </div>
   );
 }
 
@@ -61,15 +85,15 @@ export default function DocsApp() {
       </nav>
 
       {/* Main Documentation Grid */}
-      <main className="mx-auto grid max-w-[1180px] gap-12 px-6 py-14 lg:grid-cols-[220px_1fr]">
+      <main className="mx-auto grid max-w-[1180px] gap-12 px-6 py-14 lg:grid-cols-[230px_1fr]">
         {/* Sticky Sidebar Navigation */}
         <aside className="hidden lg:block">
-          <div className="sticky top-28 space-y-2 border-l border-line pl-4 text-xs font-mono">
+          <div className="sticky top-28 space-y-2.5 border-l border-line pl-4 text-xs font-mono">
             <span className="mono-label text-[10px] text-amber block mb-3">Documentation Index</span>
             {sections.map(([id, label]) => (
               <a
                 key={id}
-                className="block text-muted hover:text-sage hover:translate-x-1 transition-all py-1"
+                className="block text-muted hover:text-sage hover:translate-x-1 transition-all py-1 font-medium"
                 href={`#${id}`}
               >
                 {label}
@@ -94,6 +118,7 @@ export default function DocsApp() {
             </p>
           </header>
 
+          {/* Quickstart */}
           <section id="quickstart" className="space-y-4">
             <div className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-green" />
@@ -110,9 +135,65 @@ npm test`}</Code>
             </p>
           </section>
 
-          <section id="concepts" className="space-y-4">
+          {/* Reviewer Recommended: Complete End-to-End Walkthrough */}
+          <section id="walkthrough" className="space-y-6 pt-4 border-t border-line">
             <div className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-amber" />
+              <h2 className="font-mono text-2xl font-bold text-ink">Complete End-to-End Walkthrough</h2>
+            </div>
+            <p className="text-sm text-muted font-sans leading-relaxed">
+              Here is the complete lifecycle of how Saphene catches drift between an agent's memory and actual repository code:
+            </p>
+
+            <div className="space-y-4 font-mono text-xs">
+              <div className="facet-card p-5">
+                <span className="text-sage font-bold block mb-1">STEP 1: A memory claim is asserted</span>
+                <p className="text-muted font-sans text-xs">
+                  A coding agent states: "The user database uses a schema-per-tenant strategy with tenant_id indices."
+                </p>
+              </div>
+
+              <div className="facet-card p-5">
+                <span className="text-sage font-bold block mb-1">STEP 2: Saphene imports and hashes the claim</span>
+                <p className="text-muted font-sans text-xs">
+                  Saphene assigns a deterministic ID <code className="text-amber">clm_9a4f21</code> and identifies expected evidence hints: <code className="text-sage">tenant_id, schema, prisma</code>.
+                </p>
+              </div>
+
+              <div className="facet-card p-5">
+                <span className="text-sage font-bold block mb-1">STEP 3: Repository AST and files are scanned</span>
+                <p className="text-muted font-sans text-xs">
+                  The bridge scanner parses <code className="text-ink">prisma/schema.prisma</code> and identifies the exact line matching the claim.
+                </p>
+              </div>
+
+              <div className="facet-card p-5">
+                <span className="text-sage font-bold block mb-1">STEP 4: A verified receipt and verdict are generated</span>
+                <p className="text-muted font-sans text-xs">
+                  Verdict: <span className="badge badge-matched">MATCHED</span>. Receipt: <code className="receipt-tag">prisma/schema.prisma:18 @@index([tenant_id])</code>. Recorded to <code className="text-ink">.saphene/ledger.json</code>.
+                </p>
+              </div>
+
+              <div className="facet-card p-5 border-amber/40 bg-amber/5">
+                <span className="text-amber font-bold block mb-1">STEP 5: A subsequent code change introduces drift</span>
+                <p className="text-muted font-sans text-xs">
+                  A developer deletes the index or removes tenant isolation in PR #142 to simplify a migration.
+                </p>
+              </div>
+
+              <div className="facet-card p-5 border-bad/40 bg-bad/10">
+                <span className="text-bad font-bold block mb-1">STEP 6: The next verification run catches the regression</span>
+                <p className="text-muted font-sans text-xs">
+                  Running <code className="text-bad">npm run review</code> detects that claim <code className="text-amber">clm_9a4f21</code> lost its citation receipt in commit <code className="text-ink">e7b81f9</code>. Status flips to <span className="badge badge-unfound">UNFOUND / DRIFT</span> and the GitHub Actions PR gate fails with exit code 1.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Concepts */}
+          <section id="concepts" className="space-y-4 pt-4 border-t border-line">
+            <div className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-green" />
               <h2 className="font-mono text-2xl font-bold text-ink">Core Concepts</h2>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -130,7 +211,8 @@ npm test`}</Code>
             </div>
           </section>
 
-          <section id="commands" className="space-y-4">
+          {/* Commands */}
+          <section id="commands" className="space-y-4 pt-4 border-t border-line">
             <div className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-green" />
               <h2 className="font-mono text-2xl font-bold text-ink">CLI Command Reference</h2>
@@ -145,7 +227,8 @@ npm test`}</Code>
             </div>
           </section>
 
-          <section id="claims" className="space-y-4">
+          {/* Claims format */}
+          <section id="claims" className="space-y-4 pt-4 border-t border-line">
             <div className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-amber" />
               <h2 className="font-mono text-2xl font-bold text-ink">Claims File Format</h2>
@@ -158,7 +241,8 @@ npm test`}</Code>
   evidence: tenant_id, schema, Prisma proxy`}</Code>
           </section>
 
-          <section id="ledger" className="space-y-4">
+          {/* Ledger & Drift */}
+          <section id="ledger" className="space-y-4 pt-4 border-t border-line">
             <div className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-green" />
               <h2 className="font-mono text-2xl font-bold text-ink">Ledger & Drift Detection</h2>
@@ -184,7 +268,8 @@ npm test`}</Code>
             </div>
           </section>
 
-          <section id="audit" className="space-y-4">
+          {/* Audit panel */}
+          <section id="audit" className="space-y-4 pt-4 border-t border-line">
             <div className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-amber" />
               <h2 className="font-mono text-2xl font-bold text-ink">The Audit Panel</h2>
@@ -196,7 +281,8 @@ npm test`}</Code>
 npm run audit -- --repo D:/Projects/Agapay --focus security`}</Code>
           </section>
 
-          <section id="mcp" className="space-y-4">
+          {/* MCP */}
+          <section id="mcp" className="space-y-4 pt-4 border-t border-line">
             <div className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-green" />
               <h2 className="font-mono text-2xl font-bold text-ink">MCP Server for Agents</h2>
@@ -207,7 +293,8 @@ npm run audit -- --repo D:/Projects/Agapay --focus security`}</Code>
             <Code>{`npm run mcp`}</Code>
           </section>
 
-          <section id="actions" className="space-y-4">
+          {/* GitHub Actions */}
+          <section id="actions" className="space-y-4 pt-4 border-t border-line">
             <div className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-amber" />
               <h2 className="font-mono text-2xl font-bold text-ink">GitHub Actions PR Gate</h2>
@@ -217,6 +304,7 @@ npm run audit -- --repo D:/Projects/Agapay --focus security`}</Code>
             </p>
           </section>
 
+          {/* FAQ */}
           <section id="faq" className="space-y-6 pt-4 border-t border-line">
             <h2 className="font-mono text-2xl font-bold text-ink">Frequently Asked Questions</h2>
             <div className="space-y-5">

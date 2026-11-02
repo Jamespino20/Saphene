@@ -55,7 +55,7 @@ export function ProblemSection() {
               Memory moves faster than the repository.
             </h2>
           </div>
-          <p className="max-w-[620px] text-lg leading-relaxed text-muted">
+          <p className="max-w-[620px] text-base sm:text-lg leading-relaxed text-muted font-sans">
             Agents summarize decisions, teams write specifications, and projects accumulate confident statements.
             Then the code changes. Saphene turns that uncomfortable gap into a reviewable evidence trail.
           </p>
@@ -132,87 +132,172 @@ export function ProblemSection() {
   );
 }
 
+/**
+ * P0 Centerpiece: Interactive End-to-End Drift Lifecycle
+ * Shows claim establishment, citation, simulated code commit, and immediate drift detection.
+ */
 function ProductPreview() {
-  const rows = [
-    ["#014", "Relational database stores application data", "matched", "schema.prisma:18"],
-    ["#015", "Offline transactions synchronize with the server", "partial", "offline-store.ts:42"],
-    ["#016", "Regional reports can be exported by health workers", "unfound", "no evidence located"],
-    ["#017", "Two-factor authentication protects admin access", "mismatch", "auth/2fa.ts:86"],
-  ];
+  const [driftSimulated, setDriftSimulated] = useState(false);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-line-strong bg-surface shadow-2xl gem-glow-green">
-      {/* Table Header */}
-      <div className="flex items-center justify-between border-b border-line bg-surface-2 px-5 py-4">
+      {/* Table Header & Simulation Controller */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line bg-surface-2 px-6 py-4">
         <div className="flex items-center gap-3">
-          <span className="h-2 w-2 rounded-full bg-amber" />
-          <span className="font-mono text-xs font-semibold text-sage">saphene / verification-ledger</span>
+          <span className={`h-2.5 w-2.5 rounded-full ${driftSimulated ? "bg-bad animate-ping" : "bg-green"}`} />
+          <div>
+            <span className="font-mono text-xs font-bold text-sage block">
+              saphene / verification-ledger
+            </span>
+            <span className="font-mono text-[11px] text-muted">
+              {driftSimulated ? "DRIFT RUN #142 (POST-COMMIT)" : "BASELINE RUN #141 (ORIGINAL MEMORY)"}
+            </span>
+          </div>
         </div>
-        <span className="font-mono text-[11px] text-muted">AUDIT RUN / 2026-11-02</span>
+
+        {/* The "Aha!" Drift Simulator Button */}
+        <button
+          onClick={() => setDriftSimulated((prev) => !prev)}
+          className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 font-mono text-xs font-bold transition-all shadow-md ${
+            driftSimulated
+              ? "bg-amber text-[#07100b] hover:bg-amber-light"
+              : "bg-surface-3 border border-amber/40 text-amber hover:bg-amber/15 hover:border-amber"
+          }`}
+        >
+          <span>{driftSimulated ? "↺ Reset Code to Matched Baseline" : "⚡ Simulate Code Drift (PR #142)"}</span>
+        </button>
       </div>
 
-      <div className="grid lg:grid-cols-[1fr_260px]">
-        {/* Claim Ledger Rows */}
-        <div className="divide-y divide-line">
-          {rows.map(([id, claim, status, receipt], index) => (
-            <motion.div
-              initial={{ opacity: 0, x: -12 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, amount: 0.5 }}
-              transition={{ delay: index * 0.08 }}
-              key={id}
-              className="grid gap-3 px-5 py-4.5 sm:grid-cols-[56px_1fr_auto] sm:items-center hover:bg-surface-2/60 transition-colors"
-            >
-              <span className="font-mono text-xs font-bold text-sage">{id}</span>
-              <div>
-                <p className="text-sm font-medium text-ink">{claim}</p>
-                <p className="mt-1 font-mono text-[11px] text-muted">
-                  receipt: <span className="receipt-tag">{receipt}</span>
-                </p>
+      <div className="grid lg:grid-cols-[1fr_280px]">
+        {/* Claim Ledger Rows with Reactive Drift State */}
+        <div className="divide-y divide-line font-mono">
+          {/* Row 1: The Drift Subject */}
+          <div className={`p-5 transition-colors ${driftSimulated ? "bg-bad/10" : "hover:bg-surface-2/60"}`}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="font-mono text-xs font-bold text-sage">#015</span>
+                <span className="font-sans text-sm font-semibold text-ink">
+                  Offline transactions synchronize automatically with the server
+                </span>
               </div>
-              <span
-                className={`badge ${
-                  status === "matched"
-                    ? "badge-matched"
-                    : status === "partial"
-                    ? "badge-partial"
-                    : status === "mismatch"
-                    ? "badge-mismatch"
-                    : "badge-unfound"
-                }`}
-              >
-                {status}
+              <span className={`badge ${driftSimulated ? "badge-unfound" : "badge-matched"}`}>
+                {driftSimulated ? "DRIFT DETECTED" : "matched"}
               </span>
-            </motion.div>
-          ))}
+            </div>
+
+            <div className="mt-3.5 space-y-2 text-xs">
+              <div className="flex items-center gap-2 text-muted">
+                <span>Original Memory Assertion:</span>
+                <span className="text-ink bg-surface-2 px-2 py-0.5 rounded border border-line">
+                  "agent-session-42: offline sync queue handled in store"
+                </span>
+              </div>
+
+              {driftSimulated ? (
+                <div className="rounded-lg border border-bad/40 bg-bad/15 p-3 text-bad font-mono text-xs leading-relaxed">
+                  <p className="font-bold flex items-center gap-1.5">
+                    <span>⚠ CITATION REMOVED IN COMMIT e7b81f9:</span>
+                  </p>
+                  <p className="mt-1 text-ink/90">
+                    File <span className="underline">src/store/offline.ts:42</span> was deleted during refactor. No replacement handler found in AST.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-muted">
+                  <span>Verified Citation:</span>
+                  <span className="receipt-tag">src/store/offline.ts:42 → syncQueueHandler()</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Row 2: Stable Matched Claim */}
+          <div className="p-5 hover:bg-surface-2/60 transition-colors">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="font-mono text-xs font-bold text-sage">#014</span>
+                <span className="font-sans text-sm font-semibold text-ink">
+                  Relational database schema defines multi-tenant tenant_id isolation
+                </span>
+              </div>
+              <span className="badge badge-matched">matched</span>
+            </div>
+            <div className="mt-2 text-xs text-muted">
+              <span>Verified Citation: </span>
+              <span className="receipt-tag">prisma/schema.prisma:18 → @@index([tenant_id])</span>
+            </div>
+          </div>
+
+          {/* Row 3: Partial / TODO Claim */}
+          <div className="p-5 hover:bg-surface-2/60 transition-colors">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="font-mono text-xs font-bold text-sage">#016</span>
+                <span className="font-sans text-sm font-semibold text-ink">
+                  Two-factor authentication protects privileged administrative actions
+                </span>
+              </div>
+              <span className="badge badge-partial">partial</span>
+            </div>
+            <div className="mt-2 text-xs text-muted">
+              <span>Verified Citation: </span>
+              <span className="receipt-tag">auth/2fa.ts:86 → TODO: enforce verifyToken()</span>
+            </div>
+          </div>
+
+          {/* Row 4: Unfound Promise */}
+          <div className="p-5 hover:bg-surface-2/60 transition-colors">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="font-mono text-xs font-bold text-sage">#017</span>
+                <span className="font-sans text-sm font-semibold text-ink">
+                  Regional export endpoint compiles compliance PDF reports
+                </span>
+              </div>
+              <span className="badge badge-unfound">unfound</span>
+            </div>
+            <div className="mt-2 text-xs text-muted">
+              <span>Verified Citation: </span>
+              <span className="text-muted/70 italic">no matching route, controller, or binary located in repository</span>
+            </div>
+          </div>
         </div>
 
-        {/* Sidebar Integrity Stats */}
+        {/* Sidebar Integrity Stats with Reactive PR Gate Result */}
         <aside className="border-t border-line bg-surface-2/70 p-6 lg:border-l lg:border-t-0 flex flex-col justify-between">
           <div>
-            <span className="mono-label text-muted text-[11px] block">Project Integrity</span>
-            <div className="mt-5 space-y-4 font-mono">
+            <span className="mono-label text-muted text-[11px] block">Project Integrity Ledger</span>
+            <div className="mt-5 space-y-4 font-mono text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted">matched</span>
-                <strong className="text-xl text-sage">01</strong>
+                <span className="text-muted">matched</span>
+                <strong className="text-lg text-sage">{driftSimulated ? "01" : "02"}</strong>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted">partial</span>
-                <strong className="text-xl text-amber">01</strong>
+                <span className="text-muted">partial</span>
+                <strong className="text-lg text-amber">01</strong>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted">unfound</span>
-                <strong className="text-xl text-bad">01</strong>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted">mismatch</span>
-                <strong className="text-xl text-bronze">01</strong>
+                <span className="text-muted">unfound / drift</span>
+                <strong className={`text-lg ${driftSimulated ? "text-bad font-black" : "text-bad"}`}>
+                  {driftSimulated ? "02 (REGRESSION)" : "01"}
+                </strong>
               </div>
             </div>
           </div>
-          <div className="mt-6 pt-4 border-t border-line">
-            <span className="mono-label text-[10px] text-amber block">PR Gate Verdict</span>
-            <span className="mt-1 font-mono text-xs text-bad font-bold block">BLOCKED: 2 FAILURES</span>
+
+          <div className="mt-8 pt-5 border-t border-line">
+            <span className="mono-label text-[10px] text-amber block">CI / PR Gate Status</span>
+            {driftSimulated ? (
+              <div className="mt-2 rounded-lg border border-bad/40 bg-bad/15 p-2.5 text-center">
+                <span className="font-mono text-xs font-bold text-bad block">✕ BLOCKED: DRIFT</span>
+                <span className="text-[10px] text-muted block mt-0.5 font-mono">Claim #015 regressed</span>
+              </div>
+            ) : (
+              <div className="mt-2 rounded-lg border border-green/40 bg-green/10 p-2.5 text-center">
+                <span className="font-mono text-xs font-bold text-green block">✓ GATE PASSED</span>
+                <span className="text-[10px] text-muted block mt-0.5 font-mono">Ledger verified baseline</span>
+              </div>
+            )}
           </div>
         </aside>
       </div>
@@ -237,9 +322,9 @@ export function ProductSection() {
               </span>
             </h2>
           </div>
-          <p className="max-w-[420px] text-base leading-relaxed text-muted">
-            A continuous product view built around verifiable claims, strict verdicts,
-            and the file receipts that make an audit defensible.
+          <p className="max-w-[460px] text-base leading-relaxed text-muted font-sans">
+            A verification table that doesn't ask visitors to trust an LLM conclusion.
+            Interact with the demonstration below to see how Saphene catches knowledge drift in real time.
           </p>
         </div>
         <ProductPreview />
@@ -324,9 +409,9 @@ export function WatchWorkSection() {
           <h2 className="mt-4 font-mono text-3xl sm:text-5xl font-bold tracking-tight text-ink">
             The agent remembers. Saphene checks.
           </h2>
-          <p className="mt-5 text-lg leading-relaxed text-muted">
-            A generic project is enough to show the handoff: a coding agent makes a claim,
-            the terminal searches the repo, and the ledger keeps the evidence.
+          <p className="mt-5 text-base sm:text-lg leading-relaxed text-muted font-sans">
+            Saphene does not replace coding agents. It acts as an independent verification referee:
+            the agent asserts a memory, the terminal searches the repository AST, and the ledger keeps the evidence.
           </p>
         </div>
 
@@ -391,8 +476,8 @@ export function WorkflowSection() {
           <h2 className="mt-4 font-mono text-3xl sm:text-5xl font-bold tracking-tight text-ink">
             A continuous loop for project truth.
           </h2>
-          <p className="mt-5 text-lg leading-relaxed text-muted">
-            Saphene treats memory as a source of claims, never as proof. Every pass produces an artifact someone else can inspect.
+          <p className="mt-5 text-base sm:text-lg leading-relaxed text-muted font-sans">
+            Saphene treats memory as a source of claims, never as proof. Every pass produces an artifact someone else can inspect, closing the loop whenever code updates.
           </p>
         </div>
 
@@ -428,7 +513,8 @@ export function VerdictsSection() {
     {
       name: "matched",
       title: "Supported by evidence",
-      text: "The repository contains the expected implementation. Keep the receipt and move on.",
+      text: "The repository contains the exact implementation. Keep the receipt and move on.",
+      example: "schema.prisma:18 @@index([tenant_id]) matched schema statement.",
       badgeClass: "badge-matched",
       dotClass: "bg-sage",
     },
@@ -436,20 +522,23 @@ export function VerdictsSection() {
       name: "partial",
       title: "Incomplete support",
       text: "Some evidence exists, but a TODO, missing branch, or unfinished behavior keeps the claim open.",
+      example: "auth/2fa.ts:86 found, but contains 'TODO: enforce token validation'.",
       badgeClass: "badge-partial",
       dotClass: "bg-amber",
     },
     {
       name: "mismatch",
       title: "Conflicting evidence",
-      text: "The code says something different from the memory or requirement. Review before trusting either.",
+      text: "The code directly contradicts the claim. Review before trusting either.",
+      example: "Claim states PostgreSQL, but code imports mysql2 driver and config.",
       badgeClass: "badge-mismatch",
       dotClass: "bg-bronze",
     },
     {
       name: "unfound",
       title: "No evidence located",
-      text: "The claim may be true elsewhere, but Saphene could not find a defensible trace in the target.",
+      text: "The claim may be true in theory, but Saphene found zero defensible traces in the repository. Distinct from mismatch.",
+      example: "Regional PDF export claim has no corresponding route, file, or controller.",
       badgeClass: "badge-unfound",
       dotClass: "bg-bad",
     },
@@ -468,22 +557,25 @@ export function VerdictsSection() {
               Four states. No hand-waving.
             </h2>
           </div>
-          <p className="max-w-[420px] text-base leading-relaxed text-muted">
-            Colors help you scan instantly. Labels, icons, and citations make the result accessible and defensible.
+          <p className="max-w-[420px] text-base leading-relaxed text-muted font-sans">
+            Colors help you scan instantly. Notice that <strong className="text-bad">unfound</strong> (no trace in repo) is fundamentally distinct from <strong className="text-bronze">mismatch</strong> (direct code contradiction).
           </p>
         </div>
 
         <div className="grid gap-5 md:grid-cols-2">
           {verdicts.map((item) => (
-            <div key={item.name} className="facet-card p-6 flex gap-5 items-start">
-              <span className={`mt-1.5 h-3.5 w-3.5 shrink-0 rounded-full ${item.dotClass}`} />
+            <div key={item.name} className="facet-card p-6 flex flex-col justify-between">
               <div>
                 <div className="flex items-center gap-3">
+                  <span className={`h-3 w-3 rounded-full ${item.dotClass}`} />
                   <h3 className="font-mono text-lg font-bold text-ink uppercase tracking-wide">{item.name}</h3>
                   <span className={`badge ${item.badgeClass}`}>verdict</span>
                 </div>
-                <p className="mt-1 font-semibold text-sm text-sage">{item.title}</p>
-                <p className="mt-2.5 text-sm leading-relaxed text-muted font-sans">{item.text}</p>
+                <p className="mt-2 font-semibold text-sm text-sage">{item.title}</p>
+                <p className="mt-2 text-sm leading-relaxed text-muted font-sans">{item.text}</p>
+              </div>
+              <div className="mt-5 pt-3 border-t border-line font-mono text-xs text-muted">
+                <span className="text-amber">Example:</span> <span className="text-ink/80">{item.example}</span>
               </div>
             </div>
           ))}
@@ -494,44 +586,56 @@ export function VerdictsSection() {
 }
 
 export function CapabilitiesSection() {
-  const items = [
-    "Memory modules and agent conversation logs",
-    "SRS requirements, PDFs, and design docs",
-    "Repository source code and Prisma/SQL schemas",
-    "CLI commands, MCP server, and GitHub Actions",
-    "Stable claim IDs and deterministic ledgers",
-    "Reviewer-persona audits with AST receipts",
+  const surfaces = [
+    {
+      title: "Stale README Promises",
+      desc: "Detect documentation that claims features exist when the code has deleted or changed them.",
+    },
+    {
+      title: "Outdated Architecture Records",
+      desc: "Verify ADRs and system design specs against the actual Prisma, SQL, and directory layouts.",
+    },
+    {
+      title: "AI Agent Hallucinations",
+      desc: "Intercept coding agent context assertions before false memories get baked into pull requests.",
+    },
+    {
+      title: "SRS & Requirement Compliance",
+      desc: "Track requirements traceability matrices automatically during capstones and software audits.",
+    },
   ];
 
   return (
     <section id="capabilities" className="bg-bg py-24 border-b border-line">
       <div className="mx-auto max-w-[1180px] px-6">
-        <div className="grid gap-14 lg:grid-cols-[0.85fr_1.15fr]">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-green" />
-              <p className="mono-label text-green">Product Capabilities</p>
-            </div>
-            <h2 className="mt-4 font-mono text-3xl sm:text-5xl font-bold tracking-tight text-ink">
-              Built for surfaces where truth gets lost.
-            </h2>
-            <p className="mt-5 text-lg leading-relaxed text-muted">
-              From a capstone proposal to a production repository, Saphene follows the claim across every evidence surface that matters.
-            </p>
+        <div className="max-w-[720px] mb-14">
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-green" />
+            <p className="mono-label text-green">Concrete Applications</p>
           </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            {items.map((item, index) => (
-              <div key={item} className="border-b border-line py-4 flex items-start gap-3">
-                <span className="font-mono text-xs font-bold text-amber">0{index + 1}</span>
-                <span className="text-sm font-medium text-ink">{item}</span>
-              </div>
-            ))}
-          </div>
+          <h2 className="mt-4 font-mono text-3xl sm:text-5xl font-bold tracking-tight text-ink">
+            Built for surfaces where truth gets lost.
+          </h2>
+          <p className="mt-5 text-base sm:text-lg leading-relaxed text-muted font-sans">
+            Whenever a statement is made about software outside of its test suite, drift begins.
+            Saphene anchors claims back to reality across these four primary surfaces:
+          </p>
         </div>
 
-        {/* Case Studies / Proofs */}
-        <div className="mt-16 grid gap-6 md:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {surfaces.map((item, index) => (
+            <div key={item.title} className="facet-card p-6 flex flex-col justify-between">
+              <div>
+                <span className="font-mono text-xs font-bold text-amber">0{index + 1}</span>
+                <h3 className="mt-4 font-mono text-base font-bold text-ink">{item.title}</h3>
+                <p className="mt-2.5 text-xs leading-relaxed text-muted font-sans">{item.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Case Studies */}
+        <div className="mt-14 grid gap-6 md:grid-cols-2">
           <div id="case-study" className="facet-card p-8">
             <div className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-amber" />
@@ -541,11 +645,11 @@ export function CapabilitiesSection() {
               A rich project that needed a witness.
             </h3>
             <p className="mt-4 leading-relaxed text-muted text-sm font-sans">
-              Agapay had ambitious requirements, detailed documentation, and a repository full of promises.
+              Agapay had ambitious specifications, detailed documentation, and a repository full of promises.
               It did not have Saphene. The case study shows what an evidence pass can reveal before a project ships.
             </p>
             <a href="#demo" className="mt-6 inline-flex items-center gap-1.5 text-sm font-mono font-semibold text-amber hover:underline">
-              <span>Run the Agapay demo</span>
+              <span>Inspect Agapay live run</span>
               <span>↓</span>
             </a>
           </div>
@@ -559,7 +663,7 @@ export function CapabilitiesSection() {
               Still don't believe us?
             </h3>
             <p className="mt-4 leading-relaxed text-muted text-sm font-sans">
-              We Saphene'd Saphene itself. Its docs, examples, workflows, and code are all claims that can be checked against the repository.
+              We Saphene'd Saphene itself. Its docs, examples, workflows, and code are all claims that are verified deterministically by our own test suite.
             </p>
             <a
               href="https://github.com/Jamespino20/Saphene"
@@ -577,55 +681,122 @@ export function CapabilitiesSection() {
   );
 }
 
+/**
+ * P1: Elevated Technical Integrations
+ * Highlights CLI, MCP Server, and GitHub Actions by name with interactive tabs.
+ */
 export function IntegrationSection() {
+  const [tab, setTab] = useState<"mcp" | "cli" | "actions">("mcp");
+
   return (
     <section id="integration" className="bg-surface py-24">
       <div className="mx-auto max-w-[1180px] px-6">
-        <div className="grid gap-12 lg:grid-cols-[1fr_0.85fr]">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-green" />
-              <p className="mono-label text-green">Developer Integration</p>
-            </div>
-            <h2 className="mt-4 font-mono text-3xl sm:text-5xl font-bold tracking-tight text-ink">
-              Meet developers where they already work.
-            </h2>
-            <p className="mt-5 max-w-[600px] text-lg leading-relaxed text-muted">
-              Start with a CLI command. Bring the same engine into an agent through MCP.
-              Gate the next pull request with a ledger diff.
-            </p>
-
-            <div className="mt-8 rounded-2xl border border-line-strong bg-bg p-6 font-mono text-xs sm:text-sm leading-8 shadow-xl">
-              <p>
-                <span className="text-amber">$</span>{" "}
-                <span className="text-ink">npm run bridge -- claims.md --repo ./app</span>
-              </p>
-              <p className="text-muted">
-                → <span className="text-sage font-bold">10 claims</span> / <span className="text-green">9 matched</span> / <span className="text-amber">1 partial</span>
-              </p>
-              <p className="mt-2">
-                <span className="text-amber">$</span>{" "}
-                <span className="text-ink">npm run review -- --claims claims.md</span>
-              </p>
-              <p className="text-sage font-semibold">
-                → PR gate: evidence ledger is clean [PASS]
-              </p>
-            </div>
+        <div className="mb-12 max-w-[720px]">
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-green" />
+            <p className="mono-label text-green">Developer Integrations</p>
           </div>
+          <h2 className="mt-4 font-mono text-3xl sm:text-5xl font-bold tracking-tight text-ink">
+            Meet developers where they already work.
+          </h2>
+          <p className="mt-5 text-base sm:text-lg leading-relaxed text-muted font-sans">
+            Saphene isn't another dashboard. It integrates into your toolchain as a local CLI, an autonomous agent MCP server, and a GitHub Actions pull-request gate.
+          </p>
+        </div>
 
-          <div className="rounded-2xl border border-line bg-surface-2 p-8 shadow-xl">
-            <span className="mono-label text-amber text-xs block">Development Roadmap</span>
-            {[
-              ["Now", "CLI, memory adapter, bridge, ledger, drift detection"],
-              ["Next", "Paper adapter, MCP server, GitHub Action PR gate"],
-              ["Direction", "Desktop workspace and live agent sidecar plugin"],
-            ].map(([stage, text]) => (
-              <div key={stage} className="border-b border-line py-5 last:border-0">
-                <span className="font-mono text-xs font-bold text-sage uppercase">{stage}</span>
-                <p className="mt-1.5 font-semibold text-sm text-ink">{text}</p>
+        {/* Integration Surface Selector */}
+        <div className="flex flex-wrap gap-2.5 mb-6">
+          {[
+            { id: "mcp", label: "Model Context Protocol (MCP)", badge: "For Agents" },
+            { id: "actions", label: "GitHub Actions PR Gate", badge: "For CI/CD" },
+            { id: "cli", label: "Local CLI Engine", badge: "For Developers" },
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setTab(item.id as "mcp" | "cli" | "actions")}
+              className={`rounded-xl border px-4.5 py-3 font-mono text-xs font-semibold flex items-center gap-3 transition-all ${
+                tab === item.id
+                  ? "border-emerald bg-surface-2 text-sage shadow-md"
+                  : "border-line bg-surface text-muted hover:border-line-strong hover:text-ink"
+              }`}
+            >
+              <span>{item.label}</span>
+              <span className="badge badge-matched text-[9.5px] py-0.5">{item.badge}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Integration Code Panes */}
+        <div className="rounded-2xl border border-line-strong bg-bg p-6 sm:p-8 font-mono text-xs sm:text-sm shadow-2xl">
+          {tab === "mcp" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-line pb-3">
+                <span className="text-sage font-bold">mcp_config.json / coding agent tool loop</span>
+                <span className="text-muted text-xs">Exposes: saphene_ledger, saphene_memory, saphene_verify</span>
               </div>
-            ))}
-          </div>
+              <pre className="text-ink leading-relaxed overflow-x-auto">
+{`{
+  "mcpServers": {
+    "saphene": {
+      "command": "node",
+      "args": ["./dist/mcp.js"],
+      "env": { "SAPHENE_WORKSPACE": "." }
+    }
+  }
+}`}
+              </pre>
+              <p className="text-muted text-xs font-sans pt-2 border-t border-line">
+                Allows Claude, Cursor, Windsurf, or custom agent scripts to verify claims against the codebase before committing code.
+              </p>
+            </div>
+          )}
+
+          {tab === "actions" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-line pb-3">
+                <span className="text-amber font-bold">.github/workflows/saphene.yml / pull request gate</span>
+                <span className="text-muted text-xs">Fails PR when claims regress</span>
+              </div>
+              <pre className="text-ink leading-relaxed overflow-x-auto">
+{`name: Saphene Evidence Gate
+on: [pull_request]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install
+      - run: npx saphene review --claims claims.md --fail-on-drift`}
+              </pre>
+              <p className="text-muted text-xs font-sans pt-2 border-t border-line">
+                Blocks the merge if any previously verified claim loses its code receipt during a pull request.
+              </p>
+            </div>
+          )}
+
+          {tab === "cli" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-line pb-3">
+                <span className="text-green font-bold">Terminal CLI / local-first execution</span>
+                <span className="text-muted text-xs">Zero API keys required in --no-model mode</span>
+              </div>
+              <pre className="text-ink leading-relaxed overflow-x-auto">
+{`# Initialize memory ledger
+$ npx saphene init --memory-dir ./memory
+
+# Verify claims against repository AST and evidence
+$ npx saphene bridge -- examples/agapay-claims.md --repo ./app
+→ 10 claims | 9 matched | 1 partial | 0 drift [PASS]
+
+# Audit panel personas (security, performance, flow)
+$ npx saphene audit --repo ./app --focus security`}
+              </pre>
+              <p className="text-muted text-xs font-sans pt-2 border-t border-line">
+                100% deterministic, offline execution for fast local validation in pre-commit hooks.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </section>
