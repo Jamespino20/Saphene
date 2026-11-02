@@ -18,7 +18,7 @@ export default function Loop() {
             <div key={s.n} className="p-6 rounded-[12px] border border-line/50 bg-surface hover:border-accent/50 transition-all duration-300">
               <div className="flex items-center gap-3 mb-4">
                 <span className="font-mono text-accent font-bold text-lg">{s.n}</span>
-                <span className="text-sm font-mono text-muted">/ 04</span>
+                <span className="text-sm font-mono text-muted">{`/ ${STEPS.length}`}</span>
               </div>
               <h3 className="text-ink font-semibold text-sm mb-1">{s.title}</h3>
               <p className="text-muted text-xs">{s.text}</p>

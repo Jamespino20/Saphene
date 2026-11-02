@@ -13,6 +13,8 @@ import {
 type AgapayTabId = "bridge" | "audit" | "memory";
 type SapheneTabId = "selftest" | "readme" | "mcp";
 
+const MAX_LINES = 200;
+
 /**
  * Agapay Case Study Terminal
  */
@@ -57,7 +59,7 @@ export function AgapayTerminalDemo() {
         setDone(true);
         return;
       }
-      setShown((prev) => [...prev, script[i]]);
+      setShown((prev) => [...prev.slice(-MAX_LINES + 1), script[i]]);
       timers.push(window.setTimeout(() => revealNext(i + 1), 38));
     };
 
@@ -226,7 +228,7 @@ export function SapheneSelfTerminalDemo() {
         setDone(true);
         return;
       }
-      setShown((prev) => [...prev, script[i]]);
+      setShown((prev) => [...prev.slice(-MAX_LINES + 1), script[i]]);
       timers.push(window.setTimeout(() => revealNext(i + 1), 38));
     };
 

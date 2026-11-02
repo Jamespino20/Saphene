@@ -11,6 +11,13 @@ export default defineConfig({
         main: "index.html",
         docs: "docs.html",
       },
+      output: {
+        manualChunks: (id) => {
+          if (id.includes("node_modules")) {
+            return "vendor";
+          }
+        },
+      },
     },
   },
 });

@@ -31,7 +31,11 @@ function Code({ children }: { children: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(children);
+    try {
+      navigator.clipboard.writeText(children);
+    } catch {
+      // Clipboard access denied or unavailable (non-secure context, permissions). No-op.
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
