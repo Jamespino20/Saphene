@@ -4,6 +4,7 @@
   "description": "Saphene: Clarity Through Evidence. Claim-ledger engine that verifies workspace memory against paper and repository evidence.",
   "type": "module",
   "scripts": {
+    "build": "npm run build --prefix site",
     "verify": "tsx src/cli.ts verify",
     "init": "tsx src/init.ts",
     "bridge": "tsx src/cli.ts bridge",
