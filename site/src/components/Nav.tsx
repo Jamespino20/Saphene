@@ -4,7 +4,7 @@ const LINKS = [
   { href: "#product", label: "Product" },
   { href: "#workflow", label: "How it works" },
   { href: "#case-study", label: "Case study" },
-  { href: "/docs.html", label: "Docs" },
+  { href: "./docs.html", label: "Docs" },
 ];
 
 export default function Nav() {
@@ -18,7 +18,7 @@ export default function Nav() {
     <nav className={`sticky top-0 z-50 border-b transition-colors ${scrolled ? "border-line bg-bg/90 backdrop-blur-md" : "border-transparent"}`}>
       <div className="mx-auto flex max-w-[1180px] items-center justify-between px-6 py-5">
         <a href="#" className="flex items-center gap-2 font-mono text-lg font-bold tracking-[.08em]">
-          <img src="/saphene.svg" alt="" className="logo-mark h-8 w-6 object-contain" />
+          <img src="./saphene.svg" alt="" className="logo-mark h-8 w-6 object-contain" />
           SAPHENE<span className="text-amber">_</span>
         </a>
         <div className="hidden items-center gap-7 text-sm text-muted md:flex">
