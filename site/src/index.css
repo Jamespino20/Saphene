@@ -1,70 +1,239 @@
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap");
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #f5f7f1;
-  --color-surface: #eaf0e3;
-  --color-surface2: #dfe9d7;
-  --color-surface-strong: #dfe9d7;
-  --color-ink: #193a32;
-  --color-muted: #60766d;
-  --color-deep: #2c6054;
-  --color-green: #4b8368;
-  --color-sage: #a4c882;
-  --color-mint: #d6e3b8;
-  --color-teal: #387b6c;
-  --color-yellow: #bfcd7f;
+  --color-bg: #070a0e;
+  --color-surface: #0d141b;
+  --color-surface-2: #131d27;
+  --color-surface-3: #1a2734;
+  --color-line: #1c2b3a;
+  --color-line-strong: #293d52;
+  --color-ink: #f1f5f9;
+  --color-muted: #8b9eb5;
+  --color-dim: #55677c;
+
+  /* Authentic Saphene Logo Colors: Green & Amber */
+  --color-sage: #bfcd7f;
+  --color-sage-light: #d6e3b8;
+  --color-sage-dim: #8c8f5f;
+  
+  --color-green: #4ade80;
+  --color-emerald: #4b8368;
+  --color-emerald-light: #6ea787;
+  --color-emerald-deep: #2c6054;
+  --color-spruce: #387b6c;
+
   --color-amber: #eeb250;
+  --color-amber-light: #fcd34d;
+  --color-amber-dim: #d97706;
   --color-bronze: #c88b42;
-  --color-accent: #4b8368;
-  --color-accent-dim: #387b6c;
-  --color-warn: #eeb250;
-  --color-bad: #c88b42;
-  --color-info: #387b6c;
-  --color-line-strong: #9db8a2;
-  --color-line: #cddbc8;
-  --font-mono: "Spline Sans Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
-  --font-sans: "Public Sans", -apple-system, "Segoe UI", sans-serif;
+
+  --color-bad: #f87171;
+  --color-warn: #fbbf24;
+
+  /* Core Accent Defaults to Emerald & Amber */
+  --color-accent: #4ade80;
+  --color-accent-dim: #4b8368;
+
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-html { scroll-behavior: smooth; }
+:root {
+  --bg: #070a0e;
+  --surface: #0d141b;
+  --surface-2: #131d27;
+  --border: #1c2b3a;
+  --border-strong: #293d52;
+  --text: #f1f5f9;
+  --text-muted: #8b9eb5;
+  
+  --green: #4ade80;
+  --emerald: #4b8368;
+  --sage: #bfcd7f;
+  --amber: #eeb250;
+  --bronze: #c88b42;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
+
 body {
-  background: var(--color-bg);
-  color: var(--color-ink);
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  background-color: var(--bg);
+  color: var(--text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
-::selection { background: rgba(164, 200, 130, 0.6); }
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: var(--color-bg); }
-::-webkit-scrollbar-thumb { background: var(--color-line); border: 3px solid var(--color-bg); border-radius: 8px; }
-:focus-visible { outline: 3px solid var(--color-amber); outline-offset: 4px; border-radius: 4px; }
 
-@utility mono-label {
+/* ── Forensic / Evidentiary Grids (Green & Amber tint) ── */
+.forensic-grid {
+  background-image: 
+    linear-gradient(rgba(75, 131, 104, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(75, 131, 104, 0.08) 1px, transparent 1px);
+  background-size: 36px 36px;
+}
+
+.forensic-grid-dense {
+  background-image: 
+    linear-gradient(rgba(238, 178, 80, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(238, 178, 80, 0.07) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+.noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.06'/%3E%3C/svg%3E");
+}
+
+/* ── Typography Utilities ── */
+.mono-label {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.16em;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* ── Terminal Caret & Pulse ── */
+.terminal-caret {
+  animation: blink 1s steps(1) infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* ── Faceted Gem Prism Glows (Green & Amber) ── */
+.gem-glow-green {
+  box-shadow: 0 0 50px -10px rgba(75, 131, 104, 0.4), 0 0 25px -5px rgba(191, 205, 127, 0.25);
+}
+
+.gem-glow-amber {
+  box-shadow: 0 0 50px -10px rgba(238, 178, 80, 0.35), 0 0 25px -5px rgba(200, 139, 66, 0.2);
+}
+
+/* ── Status Badges ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
-@utility gemstone {
-  background: linear-gradient(135deg, rgba(164,200,130,.42), rgba(75,131,104,.14) 47%, rgba(238,178,80,.22));
-  clip-path: polygon(16% 0, 84% 0, 100% 28%, 84% 100%, 16% 100%, 0 28%);
-}
-@utility ruled {
-  background-image: linear-gradient(to bottom, transparent 31px, rgba(205,219,200,.55) 32px);
-  background-size: 100% 32px;
+
+.badge-matched {
+  background: rgba(75, 131, 104, 0.2);
+  border: 1px solid rgba(191, 205, 127, 0.4);
+  color: #bfcd7f;
 }
 
-.logo-mark { filter: drop-shadow(0 10px 16px rgba(44, 96, 84, .18)); }
-.hero-grid {
-  background-image: linear-gradient(rgba(205,219,200,.28) 1px, transparent 1px), linear-gradient(90deg, rgba(205,219,200,.28) 1px, transparent 1px);
-  background-size: 42px 42px;
-  mask-image: radial-gradient(ellipse at 70% 35%, black, transparent 68%);
+.badge-partial {
+  background: rgba(238, 178, 80, 0.15);
+  border: 1px solid rgba(238, 178, 80, 0.4);
+  color: #eeb250;
 }
-.noise { background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.08'/%3E%3C/svg%3E"); }
-.terminal-caret { animation: blink 1s steps(1) infinite; }
-@keyframes blink { 50% { opacity: 0; } }
-@keyframes float { 50% { transform: translateY(-10px) rotate(2deg); } }
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+
+.badge-unfound {
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: #f87171;
+}
+
+.badge-mismatch {
+  background: rgba(200, 139, 66, 0.2);
+  border: 1px solid rgba(200, 139, 66, 0.45);
+  color: #fcd34d;
+}
+
+/* ── Scroll-driven Animations (CSS View Timeline Progressive Enhancement) ── */
+@supports (animation-timeline: view()) {
+  .scroll-reveal {
+    animation: scrollFadeIn linear both;
+    animation-timeline: view();
+    animation-range: entry 10% cover 30%;
+  }
+
+  .scroll-card-stack {
+    animation: scrollStackEffect linear both;
+    animation-timeline: view();
+    animation-range: entry 5% exit 95%;
+  }
+
+  .scroll-progress-line {
+    animation: lineGrow linear both;
+    animation-timeline: scroll();
+  }
+}
+
+@keyframes scrollFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes scrollStackEffect {
+  0% {
+    transform: translateY(20px) scale(0.96);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-8px) scale(0.98);
+    opacity: 0.85;
+  }
+}
+
+@keyframes lineGrow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* ── Micro-interactions ── */
+.facet-card {
+  position: relative;
+  border-radius: 0.875rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  transition: all 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.facet-card:hover {
+  border-color: var(--color-line-strong);
+  transform: translateY(-3px);
+  box-shadow: 0 16px 36px -12px rgba(7, 10, 14, 0.9), 0 0 24px -6px rgba(75, 131, 104, 0.25);
+}
+
+/* Code & receipt snippet highlight */
+.receipt-tag {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: rgba(44, 96, 84, 0.35);
+  border: 1px solid rgba(191, 205, 127, 0.3);
+  color: #bfcd7f;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.375rem;
 }

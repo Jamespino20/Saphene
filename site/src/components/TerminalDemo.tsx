@@ -120,29 +120,31 @@ export default function TerminalDemo() {
       <div className="mx-auto max-w-[1180px] px-6">
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-accent">Live verification / Agapay</p>
-          <h2 className="font-mono text-[clamp(22px,3.2vw,30px)] tracking-[-0.02em]">Watch it work</h2>
+          <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-green">Live verification / Agapay</p>
+          <h2 className="font-mono text-[clamp(22px,3.2vw,30px)] tracking-[-0.02em] font-bold text-ink">Watch it work</h2>
         </div>
         <a
           href="https://github.com/Jamespino20/Agapay"
-          className="font-mono text-xs text-muted transition-colors hover:text-accent"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono text-xs text-muted transition-colors hover:text-amber"
         >
           github.com/Jamespino20/Agapay ↗
         </a>
       </div>
-      <p className="mb-6 max-w-[680px] text-[17.5px] text-muted">
-        Real claims from the Agapay project, checked against its repository. It was a rich but failed project that never
-        had Saphene to test its promises. No verdict without a citation. Switch tabs to compare claim verification, the
+      <p className="mb-6 max-w-[680px] text-base leading-relaxed text-muted font-sans">
+        Real claims from the Agapay project, checked against its repository. It was an ambitious project that never
+        had Saphene to verify its promises. No verdict without a citation. Switch tabs to compare claim verification, the
         audit panel, and memory drift watch.
       </p>
 
       <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
         {[
-          ["matched", "8", "bg-accent", "text-accent"],
-          ["partial", "2", "bg-warn", "text-warn"],
+          ["matched", "8", "bg-green", "text-sage"],
+          ["partial", "2", "bg-amber", "text-amber"],
           ["unfound", "1", "bg-bad", "text-bad"],
         ].map(([label, count, dot, text]) => (
-          <div key={label} className="rounded-lg border border-line bg-surface px-3 py-3 sm:px-4">
+          <div key={label} className="rounded-xl border border-line bg-surface px-4 py-3 sm:px-5 shadow-sm">
             <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-muted">
               <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
               {label}
@@ -154,14 +156,14 @@ export default function TerminalDemo() {
 
       <div
         ref={boxRef}
-        className={`relative overflow-hidden rounded-xl border border-line-strong bg-[#0a0e13] shadow-[0_14px_30px_-16px_rgba(0,0,0,0.55)] ${
+        className={`relative overflow-hidden rounded-xl border border-line-strong bg-[#060a0f] shadow-2xl gem-glow-green ${
           scanned ? "term-scanned" : ""
         }`}
       >
-        <div className="flex items-center gap-2 border-b border-line bg-surface px-4 py-[11px]">
-          <span className="h-[11px] w-[11px] rounded-full bg-line-strong" />
-          <span className="h-[11px] w-[11px] rounded-full bg-line-strong" />
-          <span className="h-[11px] w-[11px] rounded-full bg-line-strong" />
+        <div className="flex items-center gap-2 border-b border-line bg-surface-2 px-4 py-[11px]">
+          <span className="h-[10px] w-[10px] rounded-full bg-line-strong" />
+          <span className="h-[10px] w-[10px] rounded-full bg-line-strong" />
+          <span className="h-[10px] w-[10px] rounded-full bg-line-strong" />
           <div role="tablist" aria-label="Saphene surfaces" className="ml-3 flex gap-1">
             {TABS.map((t, i) => (
               <button
@@ -176,8 +178,10 @@ export default function TerminalDemo() {
                 tabIndex={tab === t.id ? 0 : -1}
                 onClick={() => setTab(t.id)}
                 onKeyDown={(e) => onTabKey(e, i)}
-                className={`rounded-md border border-transparent px-3 py-1 font-mono text-xs transition-colors ${
-                  tab === t.id ? "border-line-strong bg-surface2 text-accent" : "text-muted hover:text-ink"
+                className={`rounded-lg border px-3 py-1 font-mono text-xs transition-colors ${
+                  tab === t.id
+                    ? "border-emerald/40 bg-surface text-sage font-semibold shadow-sm"
+                    : "border-transparent text-muted hover:text-ink hover:bg-surface/50"
                 }`}
               >
                 {t.label}
