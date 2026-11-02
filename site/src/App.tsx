@@ -1,6 +1,5 @@
 import Nav from "./components/Nav";
 import Hero from "./components/Hero";
-import TerminalDemo from "./components/TerminalDemo";
 import {
   CapabilitiesSection,
   IntegrationSection,
@@ -20,7 +19,6 @@ export default function App() {
         <ProblemSection />
         <ProductSection />
         <WatchWorkSection />
-        <TerminalDemo />
         <WorkflowSection />
         <VerdictsSection />
         <CapabilitiesSection />

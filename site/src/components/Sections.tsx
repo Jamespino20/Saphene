@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
+import { AgapayTerminalDemo, SapheneSelfTerminalDemo } from "./TerminalDemo";
 
 const SCENARIOS = [
   {
@@ -634,46 +635,47 @@ export function CapabilitiesSection() {
           ))}
         </div>
 
-        {/* Case Studies */}
-        <div className="mt-14 grid gap-6 md:grid-cols-2">
-          <div id="case-study" className="facet-card p-8">
-            <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber" />
-              <p className="mono-label text-amber">Case study / Agapay</p>
+        {/* Case Studies Arena with Parallel Live Terminals */}
+        <div id="demo" className="mt-14 grid gap-8 lg:grid-cols-2">
+          {/* Card 1: Agapay Case Study with Live Terminal */}
+          <div id="case-study" className="facet-card p-6 sm:p-8 flex flex-col justify-between gem-glow-amber">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber" />
+                <p className="mono-label text-amber">Case study / Agapay</p>
+              </div>
+              <h3 className="mt-3 font-mono text-xl sm:text-2xl font-bold text-ink">
+                A rich project that needed a witness.
+              </h3>
+              <p className="mt-3 mb-6 leading-relaxed text-muted text-xs sm:text-sm font-sans">
+                Agapay had ambitious specifications, detailed documentation, and a repository full of promises.
+                It did not have Saphene. Test the terminal below to see what an evidence pass reveals against its repository.
+              </p>
             </div>
-            <h3 className="mt-4 font-mono text-2xl font-bold text-ink">
-              A rich project that needed a witness.
-            </h3>
-            <p className="mt-4 leading-relaxed text-muted text-sm font-sans">
-              Agapay had ambitious specifications, detailed documentation, and a repository full of promises.
-              It did not have Saphene. The case study shows what an evidence pass can reveal before a project ships.
-            </p>
-            <a href="#demo" className="mt-6 inline-flex items-center gap-1.5 text-sm font-mono font-semibold text-amber hover:underline">
-              <span>Inspect Agapay live run</span>
-              <span>↓</span>
-            </a>
+
+            <div className="pt-4 border-t border-line">
+              <AgapayTerminalDemo />
+            </div>
           </div>
 
-          <div className="facet-card p-8">
-            <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-green" />
-              <p className="mono-label text-sage">Proof of discipline</p>
+          {/* Card 2: Saphene Proof of Discipline with Self-Audit Terminal */}
+          <div className="facet-card p-6 sm:p-8 flex flex-col justify-between gem-glow-green">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-green" />
+                <p className="mono-label text-sage">Proof of discipline</p>
+              </div>
+              <h3 className="mt-3 font-mono text-xl sm:text-2xl font-bold text-ink">
+                Still don't believe us?
+              </h3>
+              <p className="mt-3 mb-6 leading-relaxed text-muted text-xs sm:text-sm font-sans">
+                We Saphene'd Saphene itself. Its documentation, architectural specs, and test harness are verified deterministically by our own test suite. Test the terminal below to see our self-verifying engine in action.
+              </p>
             </div>
-            <h3 className="mt-4 font-mono text-2xl font-bold text-ink">
-              Still don't believe us?
-            </h3>
-            <p className="mt-4 leading-relaxed text-muted text-sm font-sans">
-              We Saphene'd Saphene itself. Its docs, examples, workflows, and code are all claims that are verified deterministically by our own test suite.
-            </p>
-            <a
-              href="https://github.com/Jamespino20/Saphene"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-6 inline-flex items-center gap-1.5 text-sm font-mono font-semibold text-sage hover:underline"
-            >
-              <span>Inspect the repository</span>
-              <span>↗</span>
-            </a>
+
+            <div className="pt-4 border-t border-line">
+              <SapheneSelfTerminalDemo />
+            </div>
           </div>
         </div>
       </div>

@@ -65,11 +65,61 @@ export const TABS: Array<{ id: "bridge" | "audit" | "memory"; label: string }> =
   { id: "memory", label: "Watch memory" },
 ];
 
+export const SAPHENE_SELF_SCRIPTS: Record<string, Line[]> = {
+  selftest: [
+    ["cmd", "npm test"],
+    ["dim", "> saphene@0.1.0 test"],
+    ["dim", "> tsx src/selftest.ts"],
+    ["dim", ""],
+    ["ok", "  [PASS] typecheck — exit 0 (expected 0)"],
+    ["ok", "  [PASS] bridge matriflow (heuristic, unfound expected) — exit 1 (expected 1)"],
+    ["ok", "  [PASS] bridge anvilos (heuristic, unfound expected) — exit 1 (expected 1)"],
+    ["ok", "  [PASS] bridge agapay code-only (all matched) — exit 0 (expected 0)"],
+    ["ok", "  [PASS] review matriflow baseline (no drift) — exit 0 (expected 0)"],
+    ["ok", "  [PASS] verify README (heuristic, unfound expected) — exit 1 (expected 1)"],
+    ["ok", "  [PASS] drift harness (drift detected) — exit 1 (expected 1)"],
+    ["dim", ""],
+    ["ok", "7/7 checks passed — deterministic verification engine is verified."],
+  ],
+  readme: [
+    ["cmd", "npm run verify -- README.md --repo ."],
+    ["dim", "Saphene self-verification run: README.md against current codebase"],
+    ["dim", "Reading claims from README.md: 6 claims extracted"],
+    ["dim", ""],
+    ["ok", "  [matched] Claim-ledger engine verifies workspace memory against code AST"],
+    ["dim", "    receipt: src/schema.ts:18, src/verify.ts:25"],
+    ["ok", "  [matched] Model Context Protocol server for AI coding agents"],
+    ["dim", "    receipt: src/mcp.ts:42, package.json:25"],
+    ["ok", "  [matched] Deterministic claim hash IDs line up across runs"],
+    ["dim", "    receipt: src/extract.ts:32"],
+    ["ok", "  [matched] Multi-persona reviewer panel generates forensic audits"],
+    ["dim", "    receipt: src/audit.ts:28"],
+    ["dim", ""],
+    ["info", "Ledger updated: .saphene/ledger.json (0 drift, 100% supported)"],
+  ],
+  mcp: [
+    ["cmd", "npm run mcp -- --inspect"],
+    ["dim", "Starting Saphene MCP Server (v0.1.0)..."],
+    ["dim", "Registering tools with Model Context Protocol SDK:"],
+    ["ok", "  + tool: saphene_bridge  (verify claim files against repos)"],
+    ["ok", "  + tool: saphene_memory  (audit memory directories for drift)"],
+    ["ok", "  + tool: saphene_verify  (single file claim verification)"],
+    ["dim", ""],
+    ["ok", "Ready for Claude, Cursor, Windsurf, or custom agent connections over stdio."],
+  ],
+};
+
+export const SAPHENE_SELF_TABS: Array<{ id: "selftest" | "readme" | "mcp"; label: string }> = [
+  { id: "selftest", label: "Self-test (7/7)" },
+  { id: "readme", label: "Verify README" },
+  { id: "mcp", label: "Inspect MCP" },
+];
+
 export const LINE_CLASS: Record<LineKind, string> = {
-  cmd: "text-ink",
+  cmd: "text-ink font-semibold",
   dim: "text-muted",
-  ok: "text-accent",
-  warn: "text-warn",
+  ok: "text-sage",
+  warn: "text-amber",
   bad: "text-bad",
-  info: "text-info",
+  info: "text-green font-semibold",
 };
