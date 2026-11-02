@@ -5,7 +5,7 @@ const NAV_LINKS = [
   { label: "Evidence Ledger", href: "#product" },
   { label: "Live Terminal", href: "#demo" },
   { label: "Continuous Loop", href: "#workflow" },
-  { label: "Verdicts", href: "#verdicts" },
+  { label: "Roadmap", href: "#roadmap" },
   { label: "Docs", href: "./docs.html", external: false },
 ];
 
@@ -13,7 +13,6 @@ export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
 
   const onScroll = () => setScrolled(window.scrollY > 12);
-
   useEffect(() => {
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
@@ -22,12 +21,26 @@ export default function Nav() {
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-bg/85 backdrop-blur-md border-b border-line py-3.5 shadow-lg shadow-black/40"
-          : "bg-transparent border-b border-transparent py-5"
+        scrolled ? "bg-bg/85 backdrop-blur-md border-b border-line shadow-lg shadow-black/40" : "bg-transparent border-b border-transparent"
       }`}
     >
-      <div className="max-w-[1180px] w-full mx-auto px-6 flex items-center justify-between">
+      {/* Meta AI Hackathon header band */}
+      <div className="w-full border-b border-line bg-surface/80 backdrop-blur-md">
+        <div className="max-w-[1180px] mx-auto px-6 py-1.5 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber animate-pulse" />
+            <span className="mono-label text-[10px] text-amber tracking-wider">
+              Meta AI Hackathon 2026 · Saphene entry · In development
+            </span>
+          </div>
+          <div className="flex items-center gap-3 mono-label text-[10px] text-muted">
+            <span>Track: Agentic Infrastructure</span>
+            <span className="text-line-strong">/</span>
+            <span>Mode: Deterministic · No API key</span>
+          </div>
+        </div>
+      </div>
+      <div className={`max-w-[1180px] w-full mx-auto px-6 flex items-center justify-between ${scrolled ? "py-3.5" : "py-4"}`}>
         {/* Brand & Logo */}
         <a href="#" className="flex items-center gap-2.5 group">
           <div className="h-7 w-7 rounded-lg bg-surface border border-line-strong p-1 flex items-center justify-center transition-transform group-hover:scale-105">

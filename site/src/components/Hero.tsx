@@ -16,7 +16,7 @@ export default function Hero() {
   return (
     <section
       ref={containerRef}
-      className="relative min-h-[92vh] flex flex-col items-center justify-center overflow-hidden forensic-grid pt-24 sm:pt-28 pb-16 sm:pb-20"
+      className="relative min-h-[92vh] flex flex-col items-center justify-center overflow-hidden forensic-grid pt-32 sm:pt-36 pb-16 sm:pb-20"
     >
       {/* Background ambient lighting — strictly Green & Amber */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">

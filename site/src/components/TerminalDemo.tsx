@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DRIFT,
   LINE_CLASS,
@@ -145,7 +145,7 @@ export function AgapayTerminalDemo() {
             </button>
           </div>
 
-          <div className="min-h-[260px] whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed">
+          <div className="min-h-[260px] max-h-[260px] whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed overflow-y-auto">
             <span className="text-muted">$ </span>
             <span className="text-ink font-semibold">{cmdText}</span>
             {!done && <span className="terminal-caret inline-block h-3.5 w-1 bg-amber align-middle ml-1" />}
@@ -166,7 +166,7 @@ export function AgapayTerminalDemo() {
           rel="noopener noreferrer"
           className="text-amber hover:underline"
         >
-          Inspect Agapay Repo ↗
+          Inspect Agapay Repo â†—
         </a>
       </div>
     </div>
@@ -287,7 +287,7 @@ export function SapheneSelfTerminalDemo() {
             </span>
           </div>
 
-          <div className="min-h-[260px] whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed">
+          <div className="min-h-[260px] max-h-[260px] whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed overflow-y-auto">
             <span className="text-muted">$ </span>
             <span className="text-ink font-semibold">{cmdText}</span>
             {!done && <span className="terminal-caret inline-block h-3.5 w-1 bg-green align-middle ml-1" />}
@@ -308,7 +308,7 @@ export function SapheneSelfTerminalDemo() {
           rel="noopener noreferrer"
           className="text-sage hover:underline"
         >
-          Inspect Saphene Repo ↗
+          Inspect Saphene Repo â†—
         </a>
       </div>
     </div>
@@ -316,3 +316,4 @@ export function SapheneSelfTerminalDemo() {
 }
 
 export default AgapayTerminalDemo;
+

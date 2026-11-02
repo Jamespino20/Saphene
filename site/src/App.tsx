@@ -5,6 +5,7 @@ import {
   IntegrationSection,
   ProblemSection,
   ProductSection,
+  RoadmapSection,
   VerdictsSection,
   WatchWorkSection,
   WorkflowSection,
@@ -20,6 +21,7 @@ export default function App() {
         <ProductSection />
         <WatchWorkSection />
         <WorkflowSection />
+        <RoadmapSection />
         <VerdictsSection />
         <CapabilitiesSection />
         <IntegrationSection />
