@@ -2,5 +2,5 @@
   "framework": "vite",
   "installCommand": "npm install --prefix site",
   "buildCommand": "npm run build",
-  "outputDirectory": "site/dist"
+  "outputDirectory": "dist"
 }
