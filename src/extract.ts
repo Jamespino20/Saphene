@@ -57,6 +57,7 @@ interface ClaimBlock {
   text: string;
   category?: string;
   srsClause?: string;
+  localId?: string;
   requirementType?: string;
   priority?: string;
   evidence: string[];
@@ -83,6 +84,7 @@ function parseClaimBlocks(source: string, content: string): Claim[] {
         const value = kv[1].trim();
         if (key === "category") current.category = value;
         else if (key === "srsclause") current.srsClause = value;
+        else if (key === "localid" || key === "local-id" || key === "local_id") current.localId = value;
         else if (key === "requirementtype") current.requirementType = value;
         else if (key === "priority") current.priority = value;
         else if (key === "evidence") {
@@ -103,6 +105,7 @@ function parseClaimBlocks(source: string, content: string): Claim[] {
       text: b.text,
       category: CATEGORIES.includes(b.category as ClaimCategory) ? (b.category as ClaimCategory) : "fact",
       srsClause: b.srsClause,
+      localId: b.localId,
       requirementType: b.requirementType,
       priority: b.priority,
       source,
@@ -118,7 +121,7 @@ const EXTRACT_SYSTEM =
   "For each claim, provide expectedEvidence: 1-3 short literal strings that would appear in a codebase or document if the claim is true " +
   "(identifiers, table names, function names, config keys, exact phrases — NOT paraphrases). " +
   'Respond with ONLY a JSON array: [{"text": string, "category": "fact"|"config"|"numeric"|"path"|"behavior"|"srs", ' +
-  '"expectedEvidence": string[], "srsClause"?: string, "requirementType"?: string, "priority"?: string}]. ' +
+  '"expectedEvidence": string[], "srsClause"?: string, "localId"?: string, "requirementType"?: string, "priority"?: string}]. ' +
   "No markdown fences, no commentary.";
 
 function parseJsonArray(raw: string): unknown[] {
@@ -151,6 +154,7 @@ function normalizeClaim(raw: unknown, source: string): Claim | null {
     text,
     category,
     srsClause: typeof obj.srsClause === "string" ? obj.srsClause : undefined,
+    localId: typeof obj.localId === "string" ? obj.localId : undefined,
     requirementType: typeof obj.requirementType === "string" ? obj.requirementType : undefined,
     priority: typeof obj.priority === "string" ? obj.priority : undefined,
     source,

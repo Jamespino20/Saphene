@@ -5,6 +5,7 @@ import {
   IntegrationSection,
   ProblemSection,
   ProductSection,
+  ReceiptTicker,
   RoadmapSection,
   VerdictsSection,
   WatchWorkSection,
@@ -17,6 +18,7 @@ export default function App() {
       <Nav />
       <main>
         <Hero />
+        <ReceiptTicker />
         <ProblemSection />
         <ProductSection />
         <WatchWorkSection />
@@ -29,8 +31,8 @@ export default function App() {
         {/* Closing Evidentiary CTA Section */}
         <section className="relative overflow-hidden bg-surface py-28 border-t border-line">
           <div className="pointer-events-none absolute inset-0 forensic-grid opacity-40" />
-          <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[360px] rounded-full bg-emerald/10 blur-[140px]" />
-          <div className="pointer-events-none absolute bottom-0 right-1/4 w-[400px] h-[250px] rounded-full bg-amber/10 blur-[130px]" />
+          <div className="animate-floaty pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[360px] rounded-full bg-emerald/10 blur-[140px]" />
+          <div className="animate-floaty-slow pointer-events-none absolute bottom-0 right-1/4 w-[400px] h-[250px] rounded-full bg-amber/10 blur-[130px]" />
           <div className="noise pointer-events-none absolute inset-0 opacity-30" />
 
           <div className="relative mx-auto max-w-[840px] px-6 text-center">

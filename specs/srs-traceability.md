@@ -109,11 +109,11 @@ Adapter selection logic:
 
 ---
 
-## 7. Open questions
+## 7. Open questions — RESOLVED 2026-11-03
 
-- SRS clause numbering scheme (29148 section numbers vs. project-local IDs)?
-- Confidence threshold for auto-write-back vs. flag-for-human?
-- 26514 user-manual drafting from verdicts — in scope after Oct 30?
+- ~~SRS clause numbering scheme (29148 section numbers vs. project-local IDs)?~~ → **Both (dual identification).** Claims carry `srsClause` (29148 section reference) AND `localId` (project-local ID, e.g. `REQ-014`). Either one locates the claim; together they survive SRS renumbering. Traceability matrices print both columns.
+- ~~Confidence threshold for auto-write-back vs. flag-for-human?~~ → **Two thresholds.** `AUTO_WRITEBACK_CONFIDENCE = 0.75` (at/above: ledger write-back), `FLAG_FOR_HUMAN_CONFIDENCE = 0.5` (below: excluded from write-back, listed under FLAG FOR HUMAN). Between the two: written back with `needsReview: true`. Heuristics emit 0.75–0.9 (matched) and 0.5 (partial/unfound), so only fine-grained model verdicts can fall under the human bar.
+- ~~26514 user-manual drafting from verdicts — in scope after Oct 30?~~ → **Yes, in scope.** See `standards/iso-26514-draft.md`. Coverage gate (`saphene guide --check`, SAPH-26514-01) is automated; tone/accuracy checks ride in audit persona briefs.
 
 ---
 

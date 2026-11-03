@@ -30,6 +30,7 @@ export interface Claim {
   evidence: Evidence[];
   verifiedAt?: string;
   srsClause?: string;
+  localId?: string;
   requirementType?: string;
   priority?: string;
 }
@@ -53,6 +54,7 @@ export interface Verdict {
 export interface TraceabilityRow {
   claimId: string;
   srsClause: string;
+  localId: string;
   requirementType: string;
   status: VerdictStatus;
   citation: string;
@@ -66,20 +68,6 @@ export interface SessionSummary {
     mismatch: number;
     unfound: number;
   };
-}
-
-export interface AdapterResult {
-  adapter: "memory" | "paper" | "helm";
-  source: string;
-  claims: Claim[];
-  verdicts: Verdict[];
-}
-
-export interface AdapterResult {
-  adapter: "memory" | "paper" | "helm";
-  source: string;
-  claims: Claim[];
-  verdicts: Verdict[];
 }
 
 export interface AdapterResult {

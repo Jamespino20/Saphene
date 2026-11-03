@@ -1,6 +1,55 @@
-import { motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { animate, motion, useInView } from "motion/react";
+import { useEffect, useRef, useState } from "react";
 import { AgapayTerminalDemo, SapheneSelfTerminalDemo } from "./TerminalDemo";
+
+const RECEIPTS = [
+  ["prisma/schema.prisma:18", "@@index([tenant_id])", "matched", "text-sage"],
+  ["src/store/offline.ts:42", "syncQueueHandler()", "matched", "text-sage"],
+  ["auth/2fa.ts:86", "TODO: enforce verifyToken()", "partial", "text-amber"],
+  ["regional PDF export", "no matching route", "unfound", "text-bad"],
+  ["src/mcp.ts:87", "blocking I/O in async tool", "audit", "text-amber"],
+  ["clm_9a4f21", "deterministic claim ID", "ledger", "text-green"],
+] as const;
+
+export function ReceiptTicker() {
+  const items = [...RECEIPTS, ...RECEIPTS];
+  return (
+    <div className="marquee overflow-hidden border-b border-line bg-surface py-3" aria-hidden="true">
+      <div className="marquee-track flex w-max items-center gap-10 pr-10">
+        {items.map(([loc, note, verdict, color], i) => (
+          <span key={i} className="flex items-center gap-2 whitespace-nowrap font-mono text-[11px] text-muted">
+            <span className={`font-bold ${color}`}>●</span>
+            <span className="text-ink/80">{loc}</span>
+            <span className="text-line-strong">→</span>
+            <span>{note}</span>
+            <span className={`uppercase ${color}`}>[{verdict}]</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CountUp({ value, suffix = "" }: { value: number; suffix?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: false, amount: 0.6 });
+  const [n, setN] = useState(value);
+  useEffect(() => {
+    if (!inView) return;
+    const controls = animate(0, value, {
+      duration: 1.1,
+      ease: "easeOut",
+      onUpdate: (v) => setN(Math.round(v)),
+    });
+    return () => controls.stop();
+  }, [inView, value]);
+  return (
+    <span ref={ref}>
+      {String(n).padStart(2, "0")}
+      {suffix}
+    </span>
+  );
+}
 
 const SCENARIOS = [
   {
@@ -64,7 +113,7 @@ export function ProblemSection() {
 
         <div className="mt-14 grid gap-6 lg:grid-cols-[260px_1fr]">
           {/* Tab Selector */}
-          <div className="flex gap-2.5 overflow-x-auto pb-2 lg:block lg:space-y-2.5 lg:pb-0">
+          <div className="no-scrollbar flex gap-2.5 overflow-x-auto pb-2 lg:block lg:space-y-2.5 lg:overflow-visible lg:pb-0">
             {SCENARIOS.map((item, index) => (
               <motion.button
                 whileHover={{ x: 4 }}
@@ -175,19 +224,19 @@ function ProductPreview() {
           {/* Row 1: The Drift Subject */}
           <div className={`p-5 transition-colors ${driftSimulated ? "bg-bad/10" : "hover:bg-surface-2/60"}`}>
             <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2.5">
+              <div className="flex min-w-0 flex-1 items-center gap-2.5">
                 <span className="font-mono text-xs font-bold text-sage">#015</span>
-                <span className="font-sans text-sm font-semibold text-ink">
+                <span className="font-sans text-sm font-semibold text-ink break-words">
                   Offline transactions synchronize automatically with the server
                 </span>
               </div>
-              <span className={`badge ${driftSimulated ? "badge-unfound" : "badge-matched"}`}>
+              <span className={`badge shrink-0 ${driftSimulated ? "badge-unfound" : "badge-matched"}`}>
                 {driftSimulated ? "DRIFT DETECTED" : "matched"}
               </span>
             </div>
 
             <div className="mt-3.5 space-y-2 text-xs">
-              <div className="flex items-center gap-2 text-muted">
+              <div className="flex flex-wrap items-center gap-2 text-muted">
                 <span>Original Memory Assertion:</span>
                 <span className="text-ink bg-surface-2 px-2 py-0.5 rounded border border-line">
                   "agent-session-42: offline sync queue handled in store"
@@ -204,7 +253,7 @@ function ProductPreview() {
                   </p>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-muted">
+                <div className="flex flex-wrap items-center gap-2 text-muted">
                   <span>Verified Citation:</span>
                   <span className="receipt-tag">src/store/offline.ts:42 → syncQueueHandler()</span>
                 </div>
@@ -215,13 +264,13 @@ function ProductPreview() {
           {/* Row 2: Stable Matched Claim */}
           <div className="p-5 hover:bg-surface-2/60 transition-colors">
             <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2.5">
+              <div className="flex min-w-0 flex-1 items-center gap-2.5">
                 <span className="font-mono text-xs font-bold text-sage">#014</span>
-                <span className="font-sans text-sm font-semibold text-ink">
+                <span className="break-words font-sans text-sm font-semibold text-ink">
                   Relational database schema defines multi-tenant tenant_id isolation
                 </span>
               </div>
-              <span className="badge badge-matched">matched</span>
+              <span className="badge badge-matched shrink-0">matched</span>
             </div>
             <div className="mt-2 text-xs text-muted">
               <span>Verified Citation: </span>
@@ -232,13 +281,13 @@ function ProductPreview() {
           {/* Row 3: Partial / TODO Claim */}
           <div className="p-5 hover:bg-surface-2/60 transition-colors">
             <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2.5">
+              <div className="flex min-w-0 flex-1 items-center gap-2.5">
                 <span className="font-mono text-xs font-bold text-sage">#016</span>
-                <span className="font-sans text-sm font-semibold text-ink">
+                <span className="break-words font-sans text-sm font-semibold text-ink">
                   Two-factor authentication protects privileged administrative actions
                 </span>
               </div>
-              <span className="badge badge-partial">partial</span>
+              <span className="badge badge-partial shrink-0">partial</span>
             </div>
             <div className="mt-2 text-xs text-muted">
               <span>Verified Citation: </span>
@@ -249,13 +298,13 @@ function ProductPreview() {
           {/* Row 4: Unfound Promise */}
           <div className="p-5 hover:bg-surface-2/60 transition-colors">
             <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2.5">
+              <div className="flex min-w-0 flex-1 items-center gap-2.5">
                 <span className="font-mono text-xs font-bold text-sage">#017</span>
-                <span className="font-sans text-sm font-semibold text-ink">
+                <span className="break-words font-sans text-sm font-semibold text-ink">
                   Regional export endpoint compiles compliance PDF reports
                 </span>
               </div>
-              <span className="badge badge-unfound">unfound</span>
+              <span className="badge badge-unfound shrink-0">unfound</span>
             </div>
             <div className="mt-2 text-xs text-muted">
               <span>Verified Citation: </span>
@@ -271,16 +320,16 @@ function ProductPreview() {
             <div className="mt-5 space-y-4 font-mono text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-muted">matched</span>
-                <strong className="text-lg text-sage">{driftSimulated ? "01" : "02"}</strong>
+                <strong className="text-lg text-sage"><CountUp value={driftSimulated ? 1 : 2} /></strong>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted">partial</span>
-                <strong className="text-lg text-amber">01</strong>
+                <strong className="text-lg text-amber"><CountUp value={1} /></strong>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted">unfound / drift</span>
                 <strong className={`text-lg ${driftSimulated ? "text-bad font-black" : "text-bad"}`}>
-                  {driftSimulated ? "02 (REGRESSION)" : "01"}
+                  <CountUp value={driftSimulated ? 2 : 1} suffix={driftSimulated ? " (REGRESSION)" : ""} />
                 </strong>
               </div>
             </div>
@@ -467,7 +516,7 @@ const STEPS = [
 export function WorkflowSection() {
   return (
     <section id="workflow" className="relative border-b border-line bg-bg py-24 overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 forensic-grid-dense opacity-40" />
+      <div className="grid-drift pointer-events-none absolute inset-0 forensic-grid-dense opacity-40" />
       <div className="relative mx-auto max-w-[1180px] px-6">
         <div className="max-w-[640px]">
           <div className="flex items-center gap-2">

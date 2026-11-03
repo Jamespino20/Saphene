@@ -12,6 +12,7 @@ export interface LedgerEntry {
   status: VerdictStatus;
   citation: string;
   verifiedAt: string;
+  needsReview?: boolean;
 }
 
 export interface Ledger {

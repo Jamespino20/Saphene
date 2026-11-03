@@ -155,7 +155,7 @@ export function AgapayTerminalDemo() {
             </button>
           </div>
 
-          <div className="min-h-[260px] max-h-[260px] whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed overflow-y-auto">
+          <div className="terminal-scroll min-h-[260px] max-h-[260px] whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed overflow-y-auto">
             <span className="text-muted">$ </span>
             <span className="text-ink font-semibold">{cmdText}</span>
             {!done && (
@@ -170,8 +170,8 @@ export function AgapayTerminalDemo() {
         </div>
       </div>
 
-      <div className="mt-3.5 flex items-center justify-between text-[11px] font-mono text-muted">
-        <span>
+      <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-muted">
+        <span className="break-words">
           Citations: <strong className="text-sage">prisma/init.sql</strong>
         </span>
         <a
@@ -310,7 +310,7 @@ export function SapheneSelfTerminalDemo() {
             </span>
           </div>
 
-          <div className="min-h-[260px] max-h-[260px] whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed overflow-y-auto">
+          <div className="terminal-scroll min-h-[260px] max-h-[260px] whitespace-pre-wrap break-words p-4 font-mono text-xs leading-relaxed overflow-y-auto">
             <span className="text-muted">$ </span>
             <span className="text-ink font-semibold">{cmdText}</span>
             {!done && (
@@ -325,8 +325,8 @@ export function SapheneSelfTerminalDemo() {
         </div>
       </div>
 
-      <div className="mt-3.5 flex items-center justify-between text-[11px] font-mono text-muted">
-        <span>
+      <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-muted">
+        <span className="break-words">
           Verified Against:{" "}
           <strong className="text-green">Root Codebase AST</strong>
         </span>

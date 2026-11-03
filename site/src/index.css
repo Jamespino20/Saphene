@@ -64,17 +64,93 @@ html {
   background-color: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
+  overflow-x: clip;
 }
 
 body {
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
+  overflow-x: clip;
   background-color: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Slow ambient float for decorative orbs (pure-CSS elements only — never on motion-driven nodes) */
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+
+.animate-floaty {
+  animation: floaty 7s ease-in-out infinite;
+}
+
+.animate-floaty-slow {
+  animation: floaty 11s ease-in-out infinite reverse;
+}
+
+/* Receipt ticker marquee */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.marquee-track {
+  animation: marquee 36s linear infinite;
+}
+
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track,
+  .animate-floaty,
+  .animate-floaty-slow,
+  .grid-drift {
+    animation: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Hide scrollbars on swipe strips while keeping scrollability */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Thin dark scrollbars for terminal boxes */
+.terminal-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+.terminal-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.terminal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.terminal-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 3px;
+}
+
+/* Slow forensic-grid drift (anime.js-style ambient motion, pure CSS) */
+@keyframes grid-pan {
+  from { background-position: 0 0; }
+  to { background-position: 36px 36px; }
+}
+
+.grid-drift {
+  animation: grid-pan 14s linear infinite;
 }
 
 /* ── Forensic / Evidentiary Grids (Green & Amber tint) ── */

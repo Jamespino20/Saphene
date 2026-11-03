@@ -14,6 +14,7 @@ let claimsFile: string | undefined;
 let repoDir: string | undefined;
 let ledgerPath: string | undefined;
 let updateLedger = false;
+let codeOnly = false;
 
 for (let i = 0; i < args.length; i++) {
   switch (args[i]) {
@@ -21,11 +22,12 @@ for (let i = 0; i < args.length; i++) {
     case "--repo": repoDir = args[++i]; break;
     case "--ledger": ledgerPath = args[++i]; break;
     case "--update-ledger": updateLedger = true; break;
+    case "--code-only": codeOnly = true; break;
   }
 }
 
 if (!claimsFile || !repoDir || !ledgerPath) {
-  console.error("Usage: tsx src/review.ts --claims <file> --repo <dir> --ledger <path> [--update-ledger]");
+  console.error("Usage: tsx src/review.ts --claims <file> --repo <dir> --ledger <path> [--code-only] [--update-ledger]");
   process.exit(1);
 }
 if (!existsSync(claimsFile)) { console.error(`Claims file not found: ${claimsFile}`); process.exit(1); }
@@ -38,6 +40,7 @@ const { claims, verdicts } = await runAdapter("paper", claimsFile, content, {
   useModel: false,
   targets: [repoDir],
   includeSource: false,
+  codeOnly,
 });
 
 const entries = claims
@@ -82,10 +85,11 @@ const lines: string[] = [
     ? `### ⚠ Drift detected — this PR breaks ${diff.drifted.length} verified claim(s)`
     : "### ✔ No drift — all previously-verified claims still hold",
   "",
-  "| Claim | Verdict | Δ vs base | Citation |",
-  "| ----- | ------- | --------- | -------- |",
+  "| Claim | Verdict | Δ vs base | ID | Citation |",
+  "| ----- | ------- | --------- | -- | -------- |",
 ];
 
+const localIdByClaim = new Map(claims.map((c) => [c.id, c.localId ?? c.srsClause ?? "-"]));
 for (const e of entries) {
   const delta = driftFor(e.claimId)
     ? `\`${driftFor(e.claimId)!.from}\` → \`${e.status}\` ⚠`
@@ -94,7 +98,7 @@ for (const e of entries) {
       : resolvedIds.has(e.claimId)
         ? `\`${diff.resolved.find((r) => r.entry.claimId === e.claimId)!.from}\` → \`${e.status}\``
         : "";
-  lines.push(`| ${e.text.slice(0, 80)} | ${e.status} | ${delta} | ${e.citation.slice(0, 90)} |`);
+  lines.push(`| ${e.text.slice(0, 80)} | ${e.status} | ${delta} | ${localIdByClaim.get(e.claimId) ?? "-"} | ${e.citation.slice(0, 90)} |`);
 }
 
 if (diff.drifted.length > 0) {

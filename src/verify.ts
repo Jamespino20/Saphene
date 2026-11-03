@@ -167,6 +167,7 @@ export async function runAdapter(
       return {
         claimId: c.id,
         srsClause: c.srsClause ?? "-",
+        localId: c.localId ?? "-",
         requirementType: c.requirementType ?? "-",
         status: v?.status ?? "unverified",
         citation: v?.citation ?? "-",

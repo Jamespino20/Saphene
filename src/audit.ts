@@ -10,6 +10,9 @@ import { readFileSync, existsSync, statSync, readdirSync, writeFileSync, mkdirSy
 import { join, extname, relative, dirname, basename, resolve } from "node:path";
 import { loadLedger, saveLedger, diffLedger, sleep, type LedgerEntry } from "./ledger.js";
 import { grepLine } from "./verify.js";
+import { drawProgress, endProgress } from "./progress.js";
+import { standardsFor } from "./standards.js";
+import { fileURLToPath } from "node:url";
 
 const CODE_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".sql", ".prisma", ".php"]);
 const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".venv", "__pycache__", ".idea", ".vscode", "design-system", "targets", "audits"]);
@@ -23,12 +26,54 @@ interface Persona {
   brief: string;
 }
 
-const PERSONAS: Persona[] = [
+const BUILTIN_PERSONAS: Persona[] = [
   { id: "security", name: "Security Engineer", brief: "injection, broken authz, missing auth, secrets exposure, tenant isolation failures" },
   { id: "performance", name: "Performance Engineer", brief: "N+1 queries, unbounded work, redundant I/O, missing transactions, scaling traps" },
   { id: "flow", name: "Business-Flow Analyst", brief: "dead-end workflows, missing process steps, unenforced business rules, half-finished features" },
   { id: "quality", name: "Maintainability Reviewer", brief: "fragile patterns, error-handling gaps, duplication, dead code, hidden coupling" },
 ];
+
+function loadPersonalityFile(path: string): Persona | null {
+  try {
+    const lines = readFileSync(path, "utf8").split(/\r?\n/);
+    const nameLine = lines.find((l) => l.startsWith("# "));
+    if (!nameLine) return null;
+    const kv: Record<string, string> = {};
+    const prose: string[] = [];
+    for (const line of lines) {
+      if (line.startsWith("# ") || line.trim() === "") continue;
+      const m = line.match(/^([A-Za-z]+):\s*(.*)$/);
+      if (m && ["id", "focus", "standards"].includes(m[1].toLowerCase())) {
+        kv[m[1].toLowerCase()] = m[2].trim();
+      } else {
+        prose.push(line);
+      }
+    }
+    if (!kv.id || !kv.focus) return null;
+    const brief = prose.length > 0 ? `${kv.focus}\n${prose.join("\n").trim()}` : kv.focus;
+    return { id: kv.id, name: nameLine.slice(2).trim(), brief };
+  } catch {
+    return null;
+  }
+}
+
+function loadPersonas(): Persona[] {
+  try {
+    const dir = join(dirname(fileURLToPath(import.meta.url)), "..", "personalities");
+    if (!existsSync(dir)) return BUILTIN_PERSONAS;
+    const loaded: Persona[] = [];
+    for (const entry of readdirSync(dir).sort()) {
+      if (!entry.endsWith(".md") || entry.toLowerCase() === "readme.md") continue;
+      const p = loadPersonalityFile(join(dir, entry));
+      if (p) loaded.push(p);
+    }
+    return loaded.length > 0 ? loaded : BUILTIN_PERSONAS;
+  } catch {
+    return BUILTIN_PERSONAS;
+  }
+}
+
+const PERSONAS: Persona[] = loadPersonas();
 
 const SEVERITIES = ["critical", "major", "minor"] as const;
 const CATEGORIES = ["bug", "security", "performance", "business-flow", "incomplete"] as const;
@@ -47,6 +92,7 @@ export interface Finding {
   questions: string[];
   suggestion: string;
   verified: boolean;
+  standards: string[];
 }
 
 const args = process.argv.slice(2);
@@ -62,7 +108,12 @@ for (let i = 0; i < args.length; i++) {
   switch (args[i]) {
     case "--repo": repoDir = args[++i]; break;
     case "--ledger": ledgerPath = args[++i]; break;
-    case "--max-files": maxFiles = parseInt(args[++i] ?? "", 10) || maxFiles; break;
+    case "--max-files": {
+      const n = parseInt(args[++i] ?? "", 10);
+      if (Number.isFinite(n) && n >= 0) maxFiles = n;
+      break;
+    }
+    case "--all": maxFiles = 0; break;
     case "--update-ledger": updateLedger = true; break;
     case "--focus": focus = args[++i] ?? focus; break;
     case "--out-dir": outDir = args[++i] ?? outDir; break;
@@ -71,7 +122,7 @@ for (let i = 0; i < args.length; i++) {
 }
 
 if (!repoDir || !existsSync(repoDir)) {
-  console.error("Usage: npm run audit -- --repo <dir> [--focus code|flow|all] [--max-files N] [--out-dir audits] [--report <file>] [--update-ledger]");
+  console.error("Usage: npm run audit -- --repo <dir> [--focus code|flow|all] [--max-files N|0] [--all] [--out-dir audits] [--report <file>] [--update-ledger]");
   process.exit(1);
 }
 
@@ -128,7 +179,8 @@ function prioritize(files: string[]): string[] {
     if (p.includes("/middleware/") || p.includes("/proxy")) return 4;
     return 5;
   };
-  return files.sort((a, b) => score(a) - score(b)).slice(0, maxFiles);
+  const ranked = files.sort((a, b) => score(a) - score(b));
+  return maxFiles > 0 ? ranked.slice(0, maxFiles) : ranked;
 }
 
 function stableId(file: string, persona: string, title: string): string {
@@ -156,7 +208,7 @@ function extractContext(file: string, line: number, span = 8): { start: number; 
   }
 }
 
-function parseFindings(raw: string, file: string): Array<Omit<Finding, "id" | "verified">> {
+function parseFindings(raw: string, file: string): Array<Omit<Finding, "id" | "verified" | "standards">> {
   let text = raw.trim();
   const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fence) text = fence[1].trim();
@@ -170,7 +222,7 @@ function parseFindings(raw: string, file: string): Array<Omit<Finding, "id" | "v
     return [];
   }
   if (!Array.isArray(arr)) return [];
-  const out: Array<Omit<Finding, "id" | "verified">> = [];
+  const out: Array<Omit<Finding, "id" | "verified" | "standards">> = [];
   for (const item of arr.slice(0, 12)) {
     if (typeof item !== "object" || item === null) continue;
     const o = item as Record<string, unknown>;
@@ -219,10 +271,16 @@ async function pool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>
 const files = prioritize(listCodeFiles(repoDir!));
 console.log(`Saphene audit — ${repoDir}`);
 console.log(`Panel: ${PERSONAS.map((p) => p.name).join(" · ")}`);
-console.log(`Focus: ${focus} | Files: ${files.length} | Model: ${cfg!.model} | Concurrency: ${CONCURRENCY}`);
+const modelLabel = cfg!.fallbackBaseUrl
+  ? `${cfg!.model} (primary) + provider fallback`
+  : cfg!.fallback
+    ? `${cfg!.model} (+${cfg!.fallback})`
+    : cfg!.model;
+console.log(`Focus: ${focus} | Files: ${files.length}${maxFiles > 0 ? ` (cap ${maxFiles})` : " (uncapped — full repo)"} | Model: ${modelLabel} | Concurrency: ${CONCURRENCY}`);
 
 let checked = 0;
 const findings: Finding[] = [];
+const failedFiles: string[] = [];
 
 await pool(files, CONCURRENCY, async (file) => {
   let content = readFileSync(file, "utf8");
@@ -247,15 +305,23 @@ await pool(files, CONCURRENCY, async (file) => {
     for (const f of parsed) {
       const abs = join(repoDir!, f.file);
       const hit = grepLine(abs, f.quote) ?? grepLine(file, f.quote);
-      findings.push({ ...f, id: stableId(f.file, f.persona, f.title), verified: hit !== null });
+      findings.push({ ...f, id: stableId(f.file, f.persona, f.title), verified: hit !== null, standards: standardsFor(f.persona, f.category) });
     }
     checked += 1;
-    process.stdout.write(`  [${checked}/${files.length}] ${relative(repoDir!, file)} — ${parsed.length} findings\n`);
+    drawProgress(checked, files.length, `${relative(repoDir!, file)} — ${parsed.length} findings`);
   } catch (err) {
     checked += 1;
-    process.stdout.write(`  [${checked}/${files.length}] ${relative(repoDir!, file)} — audit failed: ${err instanceof Error ? err.message.slice(0, 80) : err}\n`);
+    failedFiles.push(relative(repoDir!, file));
+    drawProgress(checked, files.length, `${relative(repoDir!, file)} — audit failed: ${err instanceof Error ? err.message.slice(0, 80) : err}`);
   }
 });
+endProgress();
+
+if (failedFiles.length > 0) {
+  console.log(`\n  UNCHECKED (${failedFiles.length} files — provider errors, not clean):`);
+  for (const f of failedFiles) console.log(`    ${f}`);
+  console.log("  Re-run later; a 0-finding ledger with unchecked files is not a clean bill.");
+}
 
 const unverified = findings.filter((f) => !f.verified).length;
 const bySev = (s: string) => findings.filter((f) => f.severity === s).length;
@@ -286,6 +352,7 @@ for (const f of [...findings].sort((a, b) => order[a.severity] - order[b.severit
   const flag = f.verified ? "" : " (unverified quote)";
   console.log(`\n  [${f.severity.toUpperCase()}][${f.category}] ${f.title}${flag}`);
   console.log(`    reviewer: ${reviewer} · ${f.file}:${f.line}`);
+  if (f.standards.length) console.log(`    standards: ${f.standards.join(", ")}`);
   console.log(`    > ${f.quote.slice(0, 140)}`);
   if (f.questions.length) console.log(`    asks: ${f.questions[0].slice(0, 120)}`);
 }
@@ -314,7 +381,7 @@ if (reportPath || outDir) {
     "",
     `**Repository:** \`${repoDir}\`  `,
     `**Generated:** ${ts.toISOString()}  `,
-    `**Model:** ${cfg!.model} · focus: ${focus} · files scanned: ${checked} · concurrency: ${CONCURRENCY}  `,
+    `**Model:** ${modelLabel} · focus: ${focus} · files scanned: ${checked} · concurrency: ${CONCURRENCY}  `,
     `**Findings:** ${findings.length} total — critical ${bySev("critical")} · major ${bySev("major")} · minor ${bySev("minor")}`,
     "",
     "## Review panel",
@@ -364,6 +431,7 @@ if (reportPath || outDir) {
       `### [${f.severity.toUpperCase()}][${f.category}] ${esc(f.title)}`,
       "",
       `- **Reviewer:** ${reviewer}`,
+      `- **Standards:** ${f.standards.length ? f.standards.map((s) => `\`${s}\``).join(" ") : "—"}`,
       `- **Location:** \`${f.file}:${f.line}\`${f.verified ? "" : " · _quote-unverified (partial)_"}`,
       `- **Evidence:**`,
       "```",
@@ -407,4 +475,4 @@ if (reportPath || outDir) {
   console.log(`\nReport written: ${resolvedPath}`);
 }
 
-process.exitCode = bySev("critical") > 0 ? 1 : 0;
+process.exitCode = failedFiles.length > 0 ? 2 : bySev("critical") > 0 ? 1 : 0;

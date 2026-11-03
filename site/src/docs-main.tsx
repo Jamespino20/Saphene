@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
@@ -9,6 +10,7 @@ if (docsRoot) {
   createRoot(docsRoot).render(
     <StrictMode>
       <DocsApp />
+      <Analytics />
     </StrictMode>
   );
 } else {

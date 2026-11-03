@@ -9,6 +9,7 @@ const sections = [
   ["ledger", "Ledger & Drift"],
   ["audit", "Audit Panel"],
   ["mcp", "MCP Setup"],
+  ["model", "Model Setup"],
   ["actions", "GitHub Actions"],
   ["faq", "FAQ"],
 ];
@@ -21,6 +22,7 @@ const commands = [
   ["npm run audit", "Run the reviewer-persona code and business-flow panel."],
   ["npm run review", "Gate a PR against a committed evidence baseline."],
   ["npm run mcp", "Run the standard MCP server for coding agents."],
+  ["npm run guide", "Full walkthrough for any command; --check verifies guide coverage."],
   ["npm test", "Run the deterministic 7-check self-test suite."],
 ];
 
@@ -72,11 +74,11 @@ export default function DocsApp() {
               saphene<span className="text-amber">_</span>
             </span>
           </a>
-          <div className="flex items-center gap-5 font-mono text-xs text-muted">
+          <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 font-mono text-[11px] sm:text-xs text-muted">
             <a className="hover:text-sage transition-colors" href="./index.html">← Back to Landing</a>
             <a className="hover:text-amber transition-colors" href="./index.html#demo">Live Demo</a>
             <a
-              className="inline-flex items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-3 py-1.5 font-semibold text-ink hover:border-amber hover:text-amber"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-2.5 sm:px-3 py-1.5 font-semibold text-ink hover:border-amber hover:text-amber"
               href="https://github.com/Jamespino20/Saphene"
               target="_blank"
               rel="noopener noreferrer"
@@ -297,6 +299,42 @@ npm run audit -- --repo D:/Projects/Agapay --focus security`}</Code>
             <Code>{`npm run mcp`}</Code>
           </section>
 
+          {/* Model configuration */}
+          <section id="model" className="space-y-4 pt-4 border-t border-line">
+            <div className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-green" />
+              <h2 className="font-mono text-2xl font-bold text-ink">Model Configuration</h2>
+            </div>
+            <p className="text-sm text-muted font-sans leading-relaxed">
+              Saphene speaks to <em>any</em> OpenAI-compatible <code className="font-mono text-sage text-xs">chat/completions</code> endpoint.
+              Name a primary provider and an optional fallback provider — different vendors, same contract.
+              If the primary fails after retries, requests cross over automatically. Meta sits first here only because this build is a Meta deliverable:
+            </p>
+            <Code>{`# Primary provider (any OpenAI-compatible endpoint)
+MODEL_BASE_URL=<primary base URL>
+MODEL_API_KEY=<primary key>
+MODEL_NAME=<primary model>
+
+# Fallback provider (optional, any OpenAI-compatible endpoint)
+MODEL_FALLBACK_BASE_URL=<fallback base URL>
+MODEL_FALLBACK_API_KEY=<fallback key>
+MODEL_FALLBACK_MODEL=<fallback model>`}</Code>
+            <p className="text-sm text-muted font-sans leading-relaxed">
+              Worked example — this deployment (Meta primary, Google fallback):
+            </p>
+            <Code>{`MODEL_BASE_URL=https://api.meta.ai/v1
+MODEL_NAME=muse-spark-1.3-contributor
+MODEL_FALLBACK_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+MODEL_FALLBACK_MODEL=gemini-3.5-flash`}</Code>
+            <p className="text-sm text-muted font-sans leading-relaxed">
+              Any vendor serving <code className="font-mono text-sage text-xs">{"POST {base}/chat/completions"}</code> with Bearer auth
+              and <code className="font-mono text-sage text-xs">{"{choices[0].message.content}"}</code> plugs straight in — no adapter.
+              Standard and Contributor tiers are just model names (<code className="font-mono text-sage text-xs">muse-spark-1.3</code> vs <code className="font-mono text-sage text-xs">muse-spark-1.3-contributor</code>).
+              Every model path is optional: <code className="font-mono text-amber text-xs">--no-model</code> runs fully offline and deterministically.
+              Endpoint reference: <span className="font-mono text-xs text-sage">dev.meta.ai/docs</span>.
+            </p>
+          </section>
+
           {/* GitHub Actions */}
           <section id="actions" className="space-y-4 pt-4 border-t border-line">
             <div className="flex items-center gap-2">
@@ -322,6 +360,14 @@ npm run audit -- --repo D:/Projects/Agapay --focus security`}</Code>
                 <h3 className="font-mono text-base font-semibold text-ink">Why is Agapay used as the primary case study?</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted font-sans">
                   Agapay was an ambitious fintech project with extensive documentation and requirements, but suffered from silent feature drift. It represents the exact class of software Saphene is designed to defend.
+                </p>
+              </div>
+              <div className="facet-card p-6">
+                <h3 className="font-mono text-base font-semibold text-ink">Which models does Saphene use?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted font-sans">
+                  Any OpenAI-compatible provider — this deployment runs Meta Muse Spark (<code className="font-mono text-sage text-xs">muse-spark-1.3-contributor</code>) as primary
+                  with Google Gemini as the automatic fallback. Model calls are optional throughout —
+                  pass <code className="font-mono text-amber text-xs">--no-model</code> for fully offline, deterministic verification.
                 </p>
               </div>
             </div>

@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "npm run build --prefix site && node scripts/copy-site-dist.mjs",
+    "guide": "tsx src/cli.ts guide",
+    "help": "tsx src/cli.ts help",
     "verify": "tsx src/cli.ts verify",
     "init": "tsx src/init.ts",
     "bridge": "tsx src/cli.ts bridge",

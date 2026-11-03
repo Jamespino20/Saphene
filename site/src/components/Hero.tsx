@@ -1,4 +1,4 @@
-import { motion, useScroll, useTransform } from "motion/react";
+import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 
 export default function Hero() {
@@ -12,11 +12,14 @@ export default function Hero() {
   const scale = useTransform(scrollYProgress, [0, 0.75], [1, 0.96]);
   const gemY = useTransform(scrollYProgress, [0, 1], [0, 80]);
   const gemRotate = useTransform(scrollYProgress, [0, 1], [0, 30]);
+  const reduceMotion = useReducedMotion();
+  const headlineLine1 = ["CI", "for"];
+  const headlineLine2 = ["AI", "Agent", "Memory."];
 
   return (
     <section
       ref={containerRef}
-      className="relative min-h-[92vh] flex flex-col items-center justify-center overflow-hidden forensic-grid pt-32 sm:pt-36 pb-16 sm:pb-20"
+      className="grid-drift relative min-h-[92vh] flex flex-col items-center justify-center overflow-hidden forensic-grid pt-32 sm:pt-36 pb-16 sm:pb-20"
     >
       {/* Background ambient lighting — strictly Green & Amber */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -48,17 +51,40 @@ export default function Hero() {
               </span>
             </motion.div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
+        <motion.h1
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4 }}
+          className="font-mono text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-ink leading-[1.08]"
+        >
+          {headlineLine1.map((word, i) => (
+            <motion.span
+              key={word}
+              className="inline-block"
+              initial={reduceMotion ? undefined : { opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.65, delay: 0.1 }}
-              className="font-mono text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-ink leading-[1.08]"
+              transition={{ duration: 0.55, delay: reduceMotion ? 0 : 0.1 + i * 0.09, ease: "easeOut" }}
             >
-              CI for <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green via-sage to-amber">
-                AI Agent Memory.
-              </span>
-            </motion.h1>
+              {word}
+              {i < headlineLine1.length - 1 ? "\u00A0" : ""}
+            </motion.span>
+          ))}
+          <br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-green via-sage to-amber">
+            {headlineLine2.map((word, i) => (
+              <motion.span
+                key={word}
+                className="inline-block"
+                initial={reduceMotion ? undefined : { opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55, delay: reduceMotion ? 0 : 0.28 + i * 0.09, ease: "easeOut" }}
+              >
+                {word}
+                {i < headlineLine2.length - 1 ? "\u00A0" : ""}
+              </motion.span>
+            ))}
+          </span>
+        </motion.h1>
 
             {/* Clear, refined proposition copy */}
             <motion.p
