@@ -29,7 +29,7 @@ const BAD: ReadonlySet<VerdictStatus> = new Set(["unfound", "mismatch"]);
 export function loadLedger(path: string): Ledger | null {
   if (!existsSync(path)) return null;
   try {
-    const parsed = JSON.parse(readFileSync(path, "utf8")) as Ledger;
+    const parsed = JSON.parse(readFileSync(path, "utf8").replace(/^\uFEFF/, "")) as Ledger;
     if (parsed?.version !== 1 || typeof parsed.entries !== "object") return null;
     return parsed;
   } catch {

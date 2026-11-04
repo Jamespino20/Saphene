@@ -10,6 +10,7 @@ import { extractClaims } from "./extract.js";
 import { checkConsistency } from "./consistency.js";
 import { loadMechanicalProfile, runMechanicalProfile, type MechanicalProfile } from "./profile.js";
 import { loadAliasTableFromFile, loadAliasTables, mergeAliasTables } from "./aliases.js";
+import { loadSuppressions, matchSuppression } from "./suppressions.js";
 import { loadLedger, saveLedger, diffLedger, scanMemoryFiles, scanMemoryFilesWithDiagnostics, sleep, type Ledger, type LedgerEntry } from "./ledger.js";
 import { readFileSync, existsSync, realpathSync, statSync } from "node:fs";
 import { delimiter, join, relative, resolve } from "node:path";
@@ -266,6 +267,106 @@ server.registerTool(
       codeOnly ?? false,
     );
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+  },
+);
+
+server.registerTool(
+  "saphene_review",
+  {
+    title: "Saphene Review",
+    description:
+      "PR gate: verify a claims file against a repository and diff verdicts against a committed baseline ledger. Fails closed (error) when the baseline is missing or corrupt, unless updateLedger=true explicitly creates it. Drift = matched/partial regressing to unfound/mismatch; same-anchor line moves are relocated, not drift. Entries in <repo>/.saphene/suppressions.json (unexpired) are reported as suppressed and do not fail the gate.",
+    inputSchema: {
+      claimsFile: z.string().describe("Path to the claims file"),
+      repoDir: z.string().describe("Path to the repository under review"),
+      ledgerPath: z.string().describe("Path to the committed baseline ledger JSON"),
+      codeOnly: z.boolean().optional().describe("Only code files count as evidence (required when the claims file lives inside the repo)"),
+      updateLedger: z.boolean().optional().describe("Overwrite the baseline with this run (explicit baseline creation/update)"),
+    },
+  },
+  async ({ claimsFile, repoDir, ledgerPath, codeOnly, updateLedger }) => {
+    const guard = guardAll([
+      [claimsFile, "claimsFile"],
+      [repoDir, "repoDir"],
+      [ledgerPath, "ledgerPath"],
+    ]);
+    if (guard) return errorResult(guard);
+    if (!existsSync(claimsFile) || !existsSync(repoDir)) {
+      return errorResult("claimsFile or repoDir not found");
+    }
+    const ledgerExists = existsSync(ledgerPath);
+    const prev = loadLedger(ledgerPath);
+    if (ledgerExists && !prev) {
+      return errorResult(`Baseline ledger is corrupt or invalid: ${ledgerPath}. Failing closed.`);
+    }
+    if (!ledgerExists && !updateLedger) {
+      return errorResult(
+        `Baseline ledger not found: ${ledgerPath}. Failing closed: create it explicitly with updateLedger=true, then commit it.`,
+      );
+    }
+    const content = readFileSync(claimsFile, "utf8");
+    const { claims, verdicts } = await runAdapter("paper", claimsFile, content, {
+      useModel: false,
+      targets: [repoDir],
+      includeSource: false,
+      codeOnly: codeOnly ?? false,
+    });
+    const entries: LedgerEntry[] = claims
+      .filter((c) => c.expectedEvidence.length > 0)
+      .map((c) => {
+        const v = verdicts.find((x) => x.claimId === c.id)!;
+        return {
+          claimId: c.id,
+          text: c.text,
+          source: claimsFile,
+          status: v.status,
+          citation: v.citation,
+          anchor: v.anchor,
+          location: v.location,
+          verifiedAt: new Date().toISOString(),
+        };
+      });
+    const diff = diffLedger(prev, entries);
+    const suppressions = loadSuppressions(repoDir);
+    const suppressed = diff.drifted.filter((d) => matchSuppression(d.entry, suppressions));
+    const active = diff.drifted.filter((d) => !matchSuppression(d.entry, suppressions));
+    if (updateLedger) {
+      const ledger: Ledger = {
+        version: 1,
+        lastRunAt: new Date().toISOString(),
+        entries: Object.fromEntries(entries.map((e) => [e.claimId, e])),
+      };
+      saveLedger(ledgerPath, ledger);
+    }
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            {
+              total: entries.length,
+              matched: entries.filter((e) => e.status === "matched").length,
+              partial: entries.filter((e) => e.status === "partial").length,
+              unfound: entries.filter((e) => e.status === "unfound").length,
+              mismatch: entries.filter((e) => e.status === "mismatch").length,
+              gate: active.length > 0 ? "fail" : "pass",
+              drift: active.map((d) => ({ from: d.from, to: d.entry.status, text: d.entry.text, citation: d.entry.citation })),
+              suppressed: suppressed.map((d) => ({
+                text: d.entry.text,
+                reason: matchSuppression(d.entry, suppressions)?.reason,
+              })),
+              relocated: diff.relocated.map((d) => ({ fromLocation: d.fromLocation, toLocation: d.entry.location, text: d.entry.text })),
+              added: diff.added.length,
+              resolved: diff.resolved.length,
+              unchanged: diff.unchanged,
+              baselineUpdated: updateLedger ?? false,
+            },
+            null,
+            2,
+          ),
+        },
+      ],
+    };
   },
 );
 

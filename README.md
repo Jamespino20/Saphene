@@ -85,13 +85,17 @@ npx tsx saphene audit --repo D:/Projects/your-repo --update-ledger
 npx tsx saphene test
 ```
 
-Model configuration is one `.env` (any OpenAI-compatible endpoint):
+Model configuration is one `.env` (any OpenAI-compatible endpoint). This
+deployment uses Meta Model API (`https://api.meta.ai/v1`) as primary with a
+Google fallback — see https://dev.meta.ai/docs :
 
 ```
-MODEL_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
-MODEL_API_KEY=your-key
-MODEL_NAME=gemini-3.5-flash
-MODEL_FALLBACK=gemini-3.1-flash-lite
+MODEL_BASE_URL=https://api.meta.ai/v1
+MODEL_API_KEY=your-meta-key
+MODEL_NAME=muse-spark-1.3-contributor
+MODEL_FALLBACK_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+MODEL_FALLBACK_API_KEY=your-google-key
+MODEL_FALLBACK_MODEL=gemini-3.5-flash
 ```
 
 ## Receipts over vibes

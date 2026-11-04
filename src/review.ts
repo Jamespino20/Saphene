@@ -5,6 +5,7 @@
 
 import { runAdapter } from "./verify.js";
 import { loadLedger, saveLedger, diffLedger, type Ledger } from "./ledger.js";
+import { loadSuppressions, matchSuppression } from "./suppressions.js";
 import { readFileSync, existsSync } from "node:fs";
 import { basename } from "node:path";
 
@@ -71,6 +72,9 @@ const entries = claims
   });
 
 const diff = diffLedger(prev, entries);
+const suppressions = loadSuppressions(repoDir);
+const suppressedDrift = diff.drifted.filter((d) => matchSuppression(d.entry, suppressions));
+const activeDrift = diff.drifted.filter((d) => !matchSuppression(d.entry, suppressions));
 
 if (updateLedger) {
   const ledger: Ledger = {
@@ -95,9 +99,11 @@ const lines: string[] = [
     `${entries.filter((e) => e.status === "unfound").length} unfound, ` +
     `${entries.filter((e) => e.status === "mismatch").length} mismatch`,
   "",
-  diff.drifted.length > 0
-    ? `### ⚠ Drift detected — this PR breaks ${diff.drifted.length} verified claim(s)`
-    : "### ✔ No drift — all previously-verified claims still hold",
+  activeDrift.length > 0
+    ? `### ⚠ Drift detected — this PR breaks ${activeDrift.length} verified claim(s)`
+    : suppressedDrift.length > 0
+      ? `### ✔ No active drift — ${suppressedDrift.length} drifted claim(s) suppressed (see below)`
+      : "### ✔ No drift — all previously-verified claims still hold",
   "",
   "| Claim | Verdict | Δ vs base | ID | Anchor | Citation |",
   "| ----- | ------- | --------- | -- | ------ | -------- |",
@@ -117,9 +123,16 @@ for (const e of entries) {
   lines.push(`| ${e.text.slice(0, 80)} | ${e.status} | ${delta} | ${localIdByClaim.get(e.claimId) ?? "-"} | ${(e.anchor ?? "-").slice(0, 70)} | ${e.citation.slice(0, 90)} |`);
 }
 
-if (diff.drifted.length > 0) {
+if (activeDrift.length > 0) {
   lines.push("", "Broken claims require either a code fix or an explicit memory update in the same PR.");
+}
+if (suppressedDrift.length > 0) {
+  lines.push("", `Suppressed drift (${suppressedDrift.length}, .saphene/suppressions.json):`);
+  for (const d of suppressedDrift) {
+    const s = matchSuppression(d.entry, suppressions);
+    lines.push(`- ${d.entry.text.slice(0, 80)} — ${s?.reason ?? "suppressed"}${s?.expires ? ` (expires ${s.expires})` : ""}`);
+  }
 }
 
 console.log(lines.join("\n"));
-process.exitCode = diff.drifted.length > 0 ? 1 : 0;
+process.exitCode = activeDrift.length > 0 ? 1 : 0;

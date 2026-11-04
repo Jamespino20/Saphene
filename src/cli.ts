@@ -9,15 +9,16 @@ import { extractClaims } from "./extract.js";
 import { loadLedger, saveLedger, diffLedger, scanMemoryFiles, scanMemoryFilesWithDiagnostics, sleep, type Ledger, type LedgerEntry } from "./ledger.js";
 import { AUTO_WRITEBACK_CONFIDENCE, FLAG_FOR_HUMAN_CONFIDENCE, writeBackDecision } from "./standards.js";
 import { drawProgress, endProgress } from "./progress.js";
-import { readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync } from "node:fs";
 import { join, basename } from "node:path";
 import { type TraceabilityRow } from "./schema.js";
 import { checkConsistency } from "./consistency.js";
+import { chat, loadModelConfig } from "./model.js";
 import { loadMechanicalProfile, runMechanicalProfile } from "./profile.js";
 import { loadAliasTableFromFile, loadAliasTables, mergeAliasTables } from "./aliases.js";
 
 const args = process.argv.slice(2);
-const KNOWN_COMMANDS = ["init", "verify", "bridge", "memory", "consistency", "profile", "help", "guide"] as const;
+const KNOWN_COMMANDS = ["init", "verify", "bridge", "memory", "consistency", "profile", "doctor", "help", "guide"] as const;
 const firstPositional = args[0];
 const command = (KNOWN_COMMANDS as readonly string[]).includes(firstPositional)
   ? firstPositional
@@ -35,6 +36,8 @@ for (let i = 0; i < args.length; i++) {
 const noModel = args.includes("--no-model");
 const outIdx = args.indexOf("--out");
 const outPath = outIdx !== -1 ? args[outIdx + 1] : undefined;
+const sarifIdx = args.indexOf("--sarif");
+const sarifPath = sarifIdx !== -1 ? args[sarifIdx + 1] : undefined;
 
 function collectFlagValues(flag: string): string[] {
   const values: string[] = [];
@@ -106,8 +109,8 @@ interface CommandGuide {
 const GUIDES: Record<string, CommandGuide> = {
   init: {
     summary: "Scaffold a memory directory with starter claims.",
-    usage: ["saphene init [--personal] [--memory-dir <path>]"],
-    flags: [["--personal", "category folders (academia/work/creative/...) instead of the minimal template"], ["--memory-dir <path>", "where to scaffold (default ./memory)"]],
+    usage: ["saphene init [--personal] [--memory-dir <path>]", "saphene init --ci"],
+    flags: [["--personal", "category folders (academia/work/creative/...) instead of the minimal template"], ["--memory-dir <path>", "where to scaffold (default ./memory)"], ["--ci", "scaffold a Saphene review workflow + baselines/claims dirs in the current repo"]],
     examples: ["saphene init --memory-dir ./memory", "saphene init --personal --memory-dir ./agent-memory"],
     exits: [["0", "directory scaffolded"]],
     seeAlso: "memory, verify",
@@ -123,7 +126,7 @@ const GUIDES: Record<string, CommandGuide> = {
   bridge: {
     summary: "Verify a structured claims/SRS file against one or more target repositories.",
     usage: ["saphene bridge <claims-file> [--repo <dir>] [--paper <file>] [--code-only] [--no-model] [--out <file>]"],
-    flags: [["--repo <dir>", "repeatable: repository to search for evidence"], ["--paper <file>", "repeatable: document to search"], ["--code-only", "code files count as evidence; prose and claims files do not (prevents self-testimony)"], ["--no-model", "offline heuristic extraction"], ["--out <file>", ".json writes a ledger baseline; anything else writes a markdown matrix"]],
+    flags: [["--repo <dir>", "repeatable: repository to search for evidence"], ["--paper <file>", "repeatable: document to search"], ["--code-only", "code files count as evidence; prose and claims files do not (prevents self-testimony)"], ["--no-model", "offline heuristic extraction"], ["--out <file>", ".json writes a ledger baseline; anything else writes a markdown matrix"], ["--sarif <file>", "write SARIF 2.1.0 results for unfound/mismatch/partial verdicts"]],
     examples: ["saphene bridge claims.md --repo ./app --code-only --no-model", "saphene bridge claims.md --repo ./app --out .saphene/baseline.json"],
     exits: [["0", "all claims matched"], ["1", "any claim unfound or mismatch — human review"]],
     seeAlso: "verify, review",
@@ -143,6 +146,14 @@ const GUIDES: Record<string, CommandGuide> = {
     examples: ["saphene guide bridge", "saphene guide --check"],
     exits: [["0", "guide shown / coverage complete"], ["1", "unknown command / coverage missing"]],
     seeAlso: "help",
+  },
+  doctor: {
+    summary: "Check runtime, model configuration, workspace, and ledger health.",
+    usage: ["saphene doctor [--call]"],
+    flags: [["--call", "make one cheap model completion to prove the configured endpoint answers"]],
+    examples: ["saphene doctor", "saphene doctor --call"],
+    exits: [["0", "environment healthy (model optional)"], ["2", "runtime too old, or --call failed"]],
+    seeAlso: "help, guide",
   },
   memory: {
     summary: "Audit every .md in a memory directory, write <memory-dir>/.saphene/ledger.json, and diff against the last run.",
@@ -316,7 +327,81 @@ async function main(): Promise<number> {
     console.error(`Run 'saphene help' for the command list.`);
     return 1;
   }
+  if (command === "doctor") {
+    let failures = 0;
+    const nodeMajor = Number(process.versions.node.split(".")[0]);
+    console.log(`node ${process.versions.node} ${nodeMajor >= 20 ? "✓" : "✗ (need >= 20)"}`);
+    if (nodeMajor < 20) failures++;
+    console.log(`workspace ${process.cwd()}`);
+    const guideMissing = [...KNOWN_COMMANDS, ...Object.keys(STANDALONE_GUIDES)].filter((c) => !ALL_GUIDES[c]?.examples?.length);
+    console.log(`guide coverage ${guideMissing.length === 0 ? "✓ complete" : `✗ missing ${guideMissing.join(", ")}`}`);
+    if (guideMissing.length > 0) failures++;
+    const cfg = loadModelConfig();
+    if (cfg) {
+      console.log(`model ${cfg.model} @ ${cfg.baseUrl}${cfg.fallbackBaseUrl ? " (+ provider fallback)" : ""}`);
+      if (args.includes("--call")) {
+        try {
+          const started = Date.now();
+          const r = await chat(cfg, [{ role: "user", content: "Reply with the single word: ok" }], 512);
+          console.log(`model call ✓ ${r.model} answered in ${Date.now() - started}ms`);
+        } catch (err) {
+          console.log(`model call ✗ ${err instanceof Error ? err.message.slice(0, 200) : err}`);
+          failures++;
+        }
+      } else {
+        console.log("model call — skipped (pass --call to prove the endpoint answers)");
+      }
+    } else {
+      console.log("model — not configured (heuristic/--no-model mode remains available)");
+    }
+    const ledgerCandidates = ["baselines/matriflow.ledger.json", "baselines/anvilos.ledger.json", "examples/fixtures/baseline.ledger.json"];
+    for (const p of ledgerCandidates) {
+      if (!existsSync(p)) continue;
+      console.log(`ledger ${p} ${loadLedger(p) ? "✓ valid" : "✗ corrupt/invalid"}`);
+      if (!loadLedger(p)) failures++;
+    }
+    console.log(failures === 0 ? "doctor: healthy" : `doctor: ${failures} problem(s)`);
+    return failures === 0 ? 0 : 2;
+  }
   if (command === "init") {
+    if (args.includes("--ci")) {
+      const workflow = [
+        "name: Saphene Review",
+        "",
+        "on:",
+        "  pull_request:",
+        "",
+        "permissions:",
+        "  contents: read",
+        "  pull-requests: write",
+        "",
+        "jobs:",
+        "  review:",
+        "    runs-on: ubuntu-latest",
+        "    timeout-minutes: 20",
+        "    steps:",
+        "      - uses: actions/checkout@v4",
+        "      - uses: actions/setup-node@v4",
+        "        with:",
+        "          node-version: 22",
+        "          cache: npm",
+        "      - run: npm ci",
+        "      - shell: bash",
+        "        run: |",
+        "          set -o pipefail",
+        "          npx saphene review --claims claims/claims.md --repo . --code-only --ledger baselines/claims.ledger.json | tee review.md",
+        "",
+      ].join("\n");
+      mkdirSync(join(process.cwd(), ".github", "workflows"), { recursive: true });
+      mkdirSync(join(process.cwd(), "baselines"), { recursive: true });
+      mkdirSync(join(process.cwd(), "claims"), { recursive: true });
+      writeFileSync(join(process.cwd(), ".github", "workflows", "saphene-review.yml"), workflow, "utf8");
+      console.log("CI scaffold written: .github/workflows/saphene-review.yml");
+      console.log("Next: add claims/claims.md, then create the baseline explicitly:");
+      console.log("  npx saphene review --claims claims/claims.md --repo . --code-only --ledger baselines/claims.ledger.json --update-ledger");
+      console.log("Commit claims, workflow, and baselines together.");
+      return 0;
+    }
     const template = args.includes("--personal") ? "personal" : "minimal";
     const dir = memoryDir ?? "./memory";
     const { scaffold } = await import("./init.js");
@@ -434,6 +519,53 @@ async function main(): Promise<number> {
     });
 
     const summary = printSummary(claims, verdicts);
+
+    if (sarifPath) {
+      const levelFor = (s: string) => (s === "unfound" || s === "mismatch" ? "error" : "warning");
+      const sarif = {
+        version: "2.1.0",
+        $schema: "https://json.schemastore.org/sarif-2.1.0.json",
+        runs: [
+          {
+            tool: {
+              driver: {
+                name: "Saphene",
+                version: "0.1.0",
+                informationUri: "https://github.com/Jamespino20/Saphene",
+                rules: [
+                  { id: "saphene/unfound", name: "ClaimUnfound", shortDescription: { text: "Claim evidence not located" } },
+                  { id: "saphene/mismatch", name: "ClaimMismatch", shortDescription: { text: "Evidence contradicts the claim" } },
+                  { id: "saphene/partial", name: "ClaimPartial", shortDescription: { text: "Claim only partially supported" } },
+                ],
+              },
+            },
+            results: verdicts
+              .filter((v) => v.status === "unfound" || v.status === "mismatch" || v.status === "partial")
+              .map((v) => {
+                const claim = claims.find((c) => c.id === v.claimId);
+                const loc = v.location ?? "";
+                const lineMatch = loc.match(/:(\d+)$/);
+                const uri = lineMatch ? loc.slice(0, -lineMatch[0].length) : loc;
+                return {
+                  ruleId: `saphene/${v.status}`,
+                  level: levelFor(v.status),
+                  message: { text: `${claim?.text ?? v.claimId} — ${v.reason}` },
+                  locations: [
+                    {
+                      physicalLocation: {
+                        artifactLocation: { uri: uri.replace(/\\/g, "/") },
+                        region: { startLine: lineMatch ? Number(lineMatch[1]) : 1 },
+                      },
+                    },
+                  ],
+                };
+              }),
+          },
+        ],
+      };
+      writeFileSync(sarifPath, JSON.stringify(sarif, null, 2), "utf8");
+      console.log(`SARIF written to ${sarifPath}`);
+    }
 
   if (traceability.length > 0) {
     const matrix = [
