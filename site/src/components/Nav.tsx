@@ -34,13 +34,13 @@ export default function Nav() {
           <div className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-amber animate-pulse" />
             <span className="mono-label text-[9px] sm:text-[10px] text-amber tracking-wider">
-              Meta AI Hackathon 2026 · Saphene entry · In development
+              Meta AI Hackathon 2026 · Solo Indie Dev Entry · Beta
             </span>
           </div>
           <div className="hidden sm:flex items-center gap-3 mono-label text-[10px] text-muted">
-            <span>Track: Agentic Infrastructure</span>
+            <span>Track: Push The Frontier</span>
             <span className="text-line-strong">/</span>
-            <span>Mode: Deterministic · No API key</span>
+            <span>Mode: BYOK · DETERMINISTIC</span>
           </div>
         </div>
       </div>
