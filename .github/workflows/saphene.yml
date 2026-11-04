@@ -78,17 +78,20 @@ jobs:
             echo "No model secrets; running heuristic mode."
           fi
 
-      - name: Verify MatriFlow claims (deterministic)
+      # Gate on drift vs committed baselines, not raw verdicts: the demo
+      # claims intentionally include unfound cases, so bridge would exit 1
+      # by design. Review exits 1 only when a verified claim regresses.
+      - name: Review MatriFlow claims (drift gate)
         shell: bash
         run: |
           set -o pipefail
-          npx tsx saphene bridge examples/matriflow-claims.md --repo targets/matriflow --no-model | tee bridge-matriflow.txt
+          npx tsx saphene review --claims examples/matriflow-claims.md --repo targets/matriflow --ledger baselines/matriflow.ledger.json | tee bridge-matriflow.txt
 
-      - name: Verify AnvilOS claims (deterministic)
+      - name: Review AnvilOS claims (drift gate)
         shell: bash
         run: |
           set -o pipefail
-          npx tsx saphene bridge examples/anvilos-claims.md --repo targets/anvilos --no-model | tee bridge-anvilos.txt
+          npx tsx saphene review --claims examples/anvilos-claims.md --repo targets/anvilos --ledger baselines/anvilos.ledger.json | tee bridge-anvilos.txt
 
       - name: Upload verdict artifacts
         if: always()
