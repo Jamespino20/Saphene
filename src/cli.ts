@@ -13,12 +13,14 @@ import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync } from "no
 import { join, basename } from "node:path";
 import { type TraceabilityRow } from "./schema.js";
 import { checkConsistency } from "./consistency.js";
+import { scanRepo } from "./scan.js";
+import { ingestSarif } from "./ingest.js";
 import { chat, loadModelConfig } from "./model.js";
 import { loadMechanicalProfile, runMechanicalProfile } from "./profile.js";
 import { loadAliasTableFromFile, loadAliasTables, mergeAliasTables } from "./aliases.js";
 
 const args = process.argv.slice(2);
-const KNOWN_COMMANDS = ["init", "verify", "bridge", "memory", "consistency", "profile", "doctor", "help", "guide"] as const;
+const KNOWN_COMMANDS = ["init", "verify", "bridge", "memory", "consistency", "profile", "doctor", "scan", "ingest", "help", "guide"] as const;
 const firstPositional = args[0];
 const command = (KNOWN_COMMANDS as readonly string[]).includes(firstPositional)
   ? firstPositional
@@ -146,6 +148,22 @@ const GUIDES: Record<string, CommandGuide> = {
     examples: ["saphene guide bridge", "saphene guide --check"],
     exits: [["0", "guide shown / coverage complete"], ["1", "unknown command / coverage missing"]],
     seeAlso: "help",
+  },
+  scan: {
+    summary: "Run deterministic rule checks over code (no model, offline).",
+    usage: ["saphene scan [--repo <dir>] [--sarif <file>]"],
+    flags: [["--repo <dir>", "repository to scan (default .)"], ["--sarif <file>", "write findings as SARIF 2.1.0"]],
+    examples: ["saphene scan --repo ./app", "saphene scan --repo ./app --sarif findings.sarif"],
+    exits: [["0", "no critical findings"], ["1", "critical findings present"]],
+    seeAlso: "audit, bridge",
+  },
+  ingest: {
+    summary: "Import a SARIF report (Slither, Semgrep, Snyk, CodeQL) into a Saphene ledger.",
+    usage: ["saphene ingest <report.sarif> [--out <ledger.json>]"],
+    flags: [["--out <file>", "ledger to write (default .saphene/ingested.ledger.json)"]],
+    examples: ["saphene ingest slither.sarif", "saphene ingest semgrep.sarif --out .saphene/scanner.ledger.json"],
+    exits: [["0", "report ingested"]],
+    seeAlso: "scan, review",
   },
   doctor: {
     summary: "Check runtime, model configuration, workspace, and ledger health.",
@@ -326,6 +344,70 @@ async function main(): Promise<number> {
     if (sug) console.error(`Did you mean '${sug}'? (run 'saphene guide ${sug}')`);
     console.error(`Run 'saphene help' for the command list.`);
     return 1;
+  }
+  if (command === "scan") {
+    const repoIdx = args.indexOf("--repo");
+    const repo = repoIdx !== -1 ? args[repoIdx + 1] : (args.find((a) => !a.startsWith("--") && a !== "scan") ?? ".");
+    if (!existsSync(repo)) {
+      console.error(`Repository not found: ${repo} (check the path)`);
+      return 1;
+    }
+    const { files, findings } = scanRepo(repo);
+    const bySev = (s: string) => findings.filter((f) => f.severity === s).length;
+    console.log(`Saphene scan — ${repo}`);
+    console.log(`Files scanned: ${files} | Rules: deterministic, no model`);
+    console.log(`${findings.length} findings | critical ${bySev("critical")} · major ${bySev("major")} · minor ${bySev("minor")}`);
+    const order = { critical: 0, major: 1, minor: 2 } as const;
+    for (const f of [...findings].sort((a, b) => order[a.severity] - order[b.severity])) {
+      console.log(`  [${f.severity.toUpperCase()}][${f.ruleId}] ${f.title}`);
+      console.log(`    ${f.file}:${f.line}: ${f.quote.slice(0, 120)}`);
+      console.log(`    standards: ${f.standards.join(", ")}`);
+    }
+    if (sarifPath) {
+      const sarif = {
+        version: "2.1.0",
+        $schema: "https://json.schemastore.org/sarif-2.1.0.json",
+        runs: [
+          {
+            tool: { driver: { name: "Saphene Scan", version: "0.1.0" } },
+            results: findings.map((f) => ({
+              ruleId: f.ruleId,
+              level: f.severity === "critical" ? "error" : f.severity === "major" ? "warning" : "note",
+              message: { text: `${f.title} — ${f.quote}` },
+              locations: [
+                {
+                  physicalLocation: {
+                    artifactLocation: { uri: f.file.replace(/\\/g, "/") },
+                    region: { startLine: f.line },
+                  },
+                },
+              ],
+            })),
+          },
+        ],
+      };
+      writeFileSync(sarifPath, JSON.stringify(sarif, null, 2), "utf8");
+      console.log(`SARIF written to ${sarifPath}`);
+    }
+    return bySev("critical") > 0 ? 1 : 0;
+  }
+  if (command === "ingest") {
+    const file = args.find((a) => !a.startsWith("--") && a !== "ingest" && args[args.indexOf(a) - 1] !== "--out" && args[args.indexOf(a) - 1] !== "--sarif");
+    if (!file || !existsSync(file)) {
+      console.error("Usage: saphene ingest <report.sarif> [--out <ledger.json>]");
+      return 1;
+    }
+    const { tool, entries } = ingestSarif(file);
+    const out = outPath ?? ".saphene/ingested.ledger.json";
+    saveLedger(out, {
+      version: 1,
+      lastRunAt: new Date().toISOString(),
+      entries: Object.fromEntries(entries.map((e) => [e.claimId, e])),
+    });
+    console.log(`Saphene ingest — ${file}`);
+    console.log(`Tool: ${tool} | Findings ingested: ${entries.length}`);
+    console.log(`Ledger written: ${out}`);
+    return 0;
   }
   if (command === "doctor") {
     let failures = 0;
