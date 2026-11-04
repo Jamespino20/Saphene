@@ -19,14 +19,55 @@ matched ✔   partial ~   unfound ✗   — every verdict carries a receipt
 
 | Command | What it does |
 | --- | --- |
-| `npm run init` | Scaffold a memory directory (`--personal` for category folders, `--memory-dir <path>`) |
-| `npm run bridge` | Verify claims in a file against one or more repos (`--repo`, `--code-only`, `--exclude`) |
-| `npm run memory` | Audit every `.md` in a memory directory; ledger + drift diff |
-| `npm run audit` | Persona-panel code & business-flow audit; timestamped markdown report with fix prompts (`--report`, `--out-dir`) |
-| `npm run review` | PR gate: diff verdicts against a committed baseline ledger |
-| `npm run mcp` | Run the MCP stdio server (`saphene_bridge`, `saphene_memory`, `saphene_verify`) |
-| `npm run drift` | Inject a drift into a file copy; report detection |
-| `npm test` | 7-check selftest, no model key needed |
+| `saphene init` | Scaffold a memory directory (`--personal` for category folders, `--memory-dir <path>`) |
+| `saphene bridge` | Verify claims in a file against one or more repos (`--repo`, `--code-only`, `--exclude`) |
+| `saphene memory` | Audit every `.md` in a memory directory; ledger + drift diff |
+| `saphene consistency` | Check claims from multiple documents against each other for contradictions |
+| `saphene profile --config profile.json` | Config-driven mechanical checks beside claim verification (length, term budgets, quotes, n-grams) |
+| `saphene audit` | Persona-panel code & business-flow audit; timestamped markdown report with fix prompts (`--report`, `--out-dir`) |
+| `saphene review` | PR gate: diff verdicts against a committed baseline ledger |
+| `saphene mcp` | Run the MCP server (`saphene_bridge`, `saphene_memory`, `saphene_verify`, `saphene_consistency`, `saphene_profile`) |
+| `saphene drift` | Inject a drift into a file copy; report detection |
+| `saphene test` | Deterministic self-test suite, no model key needed |
+
+## Claims format
+
+Evidence hints are literal strings Saphene can grep for — identifiers, paths,
+table names, config keys, or exact phrases. Never paraphrases.
+
+```markdown
+- The system calculates delivery dates from the last menstrual period.
+  category: srs | srsClause: 5.3.2 | localId: REQ-014 | requirementType: functional | priority: mandatory
+  evidence: calculateEDC, lmp_date
+
+- Renier does not know the first experiment was voluntary.
+  category: srs | srsClause: 7.1 | localId: PLFG-K-001 | requirementType: behavior | priority: mandatory
+  polarity: negative | scope: 02-CHARACTERS.md, 07-Creative.md
+  evidence: Renier, voluntary
+```
+
+Optional metadata: `polarity: negative` (absence becomes `matched`; strong
+verb-bearing evidence or two corroborating hints become `mismatch`; a single
+weak noun/path token becomes `partial`), `status: planned|written|locked`
+(planned claims verify against the plan document), and `scope:` path fragments.
+Per-repo entity rules live in `.saphene/aliases.json`; see
+`examples/aliases.example.json` and `examples/minimal-claims.md`.
+
+## Choosing a mode
+
+| Goal | Use |
+| --- | --- |
+| One file against other lines in itself | `verify <file> memory` |
+| One file/README against a repo | `verify <file> paper --repo <dir>` or MCP `saphene_verify` paper mode |
+| Structured SRS/claims file against a repo | `bridge` / `saphene_bridge` |
+| Whole memory directory + persistent ledger | `memory` / `saphene_memory` (`<memory-dir>/.saphene/ledger.json`) |
+| Documents against each other | `consistency` / `saphene_consistency` |
+| Style mechanics (fiction/docs) | `profile` / `saphene_profile` |
+
+`useModel: true` lets the configured model infer claims and hints from freeform
+prose. `useModel: false` is deterministic: structured claim blocks win, and
+factual prose with inferable identifiers is extracted without tables or code
+fences. Without hints, a claim is unfound with an explicit “add evidence” citation.
 
 ## Quickstart
 
@@ -34,14 +75,14 @@ matched ✔   partial ~   unfound ✗   — every verdict carries a receipt
 git clone https://github.com/Jamespino20/Saphene.git
 cd Saphene && npm install
 
-# verify a claims file against a repo (no API key needed)
-npm run bridge -- examples/agapay-claims.md --repo D:/Projects/your-repo --code-only
+# source-clone entry point (packaged installs expose the `saphene` bin directly)
+npx tsx saphene bridge examples/agapay-claims.md --repo D:/Projects/your-repo --code-only
 
 # audit code + business flows with the reviewer panel
-npm run audit -- --repo D:/Projects/your-repo --update-ledger
+npx tsx saphene audit --repo D:/Projects/your-repo --update-ledger
 
 # confirm your install
-npm test
+npx tsx saphene test
 ```
 
 Model configuration is one `.env` (any OpenAI-compatible endpoint):
@@ -65,6 +106,69 @@ Every verdict ships the evidence that produced it — and the receipts are allow
 
 Saphene audits itself too: before shipping, the panel found an unrestricted-filesystem path in its own MCP server. The report from that run is committed at `audits/`.
 
+## FAQ
+
+**Why is everything unfound?** Add literal `evidence:` hints, pass the target
+repo, and check whether prose was excluded by `--code-only`. A no-hint claim is
+unfound by design, with a citation telling you to add evidence.
+
+**Where is the ledger?** Memory audits always write
+`<memory-dir>/.saphene/ledger.json`, including a zero-claim ledger. Bridge writes
+a JSON baseline when `--out` ends in `.json`.
+
+**What changes with `useModel`?** Extraction only: model mode can infer claims
+and hints from freeform prose; heuristic mode is deterministic. Verdicts still
+come from evidence search.
+
+**What does negative `matched` mean?** Forbidden evidence was absent inside the
+declared `scope:`. Strong verb-bearing evidence, or two corroborating hints,
+becomes `mismatch`; one weak noun/path token becomes `partial` instead of
+inverting the claim.
+
+**Why isn't a moved line drift?** Ledger entries store the verbatim anchor quote
+beside the line hint. Same anchor at a new line is relocated; drift is a verdict
+regression.
+
+**Does Saphene ship style rules?** No. Mechanical profiles are project-owned
+JSON (`examples/profile.example.json`); Saphene ships no built-in taste.
+
+**Is Saphene a SonarQube, Semgrep, or Snyk replacement?** No. Those are mature
+static-analysis and vulnerability platforms. Saphene sits above them: it verifies
+whether requirements, documentation, specifications, and agent memory still match
+the code. A scanner can flag known bad patterns; Saphene checks whether a claim
+about the system still has evidence.
+
+**Can Saphene replace SAST, SCA, or a security audit?** No. Saphene is not a
+substitute for SAST, dependency/SCA scanning, container/IaC scanning, penetration
+testing, or qualified security review. The audit panel surfaces review candidates
+with receipts; scanner-grade dataflow, taint analysis, and vulnerability
+intelligence are out of scope.
+
+**Does `matched` mean true?** It means expected evidence was located in the
+searched scope. It does not prove runtime behavior, correctness, security,
+performance, or compliance. Open the receipt — a matched TODO or stale comment
+can still mislead.
+
+**Does `unfound` mean false?** No. It means the expected evidence was not located
+in the searched files. Different names, generated code, runtime wiring, or
+paraphrased hints can all produce false unfounds.
+
+**Are ISO references certification?** No. Standards mappings organize review and
+traceability; they are not certification, accreditation, or proof that a
+repository complies with ISO/IEC 25010, ISO/IEC 27002, ISO/IEC/IEEE 29148,
+ISO/IEC 26514, or any other standard.
+
+**Are consistency results definitive?** No. Cross-document checks report
+potential contradictions for human review. Aliases, chronology, paraphrase, and
+intentional unreliable narration can create false candidates.
+
+**What are `--no-model` limits?** Deterministic and offline, but literal. It can
+miss paraphrase, inferred behavior, generated code, and indirect evidence.
+
+**Can Saphene guarantee no drift or no vulnerabilities?** No. Saphene reduces
+the risk of confident statements outliving their evidence. It does not guarantee
+secure, correct, compliant, or production-ready software.
+
 ## MCP setup
 
 ```json
@@ -72,12 +176,15 @@ Saphene audits itself too: before shipping, the panel found an unrestricted-file
   "mcp": {
     "saphene": {
       "type": "local",
-      "command": ["npx", "tsx", "<path-to-Saphene>/src/mcp.ts"],
+      "command": ["saphene", "mcp"],
       "enabled": true
     }
   }
 }
 ```
+
+In a source clone without a linked bin, use
+`["npx", "tsx", "<path-to-Saphene>/saphene.ts", "mcp"]` instead.
 
 ## GitHub Actions
 

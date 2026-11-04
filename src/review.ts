@@ -33,7 +33,18 @@ if (!claimsFile || !repoDir || !ledgerPath) {
 if (!existsSync(claimsFile)) { console.error(`Claims file not found: ${claimsFile}`); process.exit(1); }
 if (!existsSync(repoDir)) { console.error(`Repo not found: ${repoDir}`); process.exit(1); }
 
+const ledgerExists = existsSync(ledgerPath);
 const prev: Ledger | null = loadLedger(ledgerPath);
+if (ledgerExists && !prev) {
+  console.error(`Baseline ledger is corrupt or invalid: ${ledgerPath}`);
+  console.error("Failing closed: repair or replace the baseline; do not let a corrupt baseline pass as 'no drift'.");
+  process.exit(2);
+}
+if (!ledgerExists && !updateLedger) {
+  console.error(`Baseline ledger not found: ${ledgerPath}`);
+  console.error("Failing closed: a PR gate must compare against a committed baseline. Create one explicitly with --update-ledger, then commit it.");
+  process.exit(2);
+}
 const content = readFileSync(claimsFile, "utf8");
 
 const { claims, verdicts } = await runAdapter("paper", claimsFile, content, {
@@ -53,6 +64,8 @@ const entries = claims
       source: claimsFile!,
       status: v.status,
       citation: v.citation,
+      anchor: v.anchor,
+      location: v.location,
       verifiedAt: new Date().toISOString(),
     };
   });
@@ -71,6 +84,7 @@ if (updateLedger) {
 const driftFor = (id: string) => diff.drifted.find((d) => d.entry.claimId === id);
 const addedIds = new Set(diff.added.map((a) => a.claimId));
 const resolvedIds = new Set(diff.resolved.map((r) => r.entry.claimId));
+const relocatedIds = new Set(diff.relocated.map((r) => r.entry.claimId));
 
 const lines: string[] = [
   "## Saphene Review",
@@ -85,8 +99,8 @@ const lines: string[] = [
     ? `### ⚠ Drift detected — this PR breaks ${diff.drifted.length} verified claim(s)`
     : "### ✔ No drift — all previously-verified claims still hold",
   "",
-  "| Claim | Verdict | Δ vs base | ID | Citation |",
-  "| ----- | ------- | --------- | -- | -------- |",
+  "| Claim | Verdict | Δ vs base | ID | Anchor | Citation |",
+  "| ----- | ------- | --------- | -- | ------ | -------- |",
 ];
 
 const localIdByClaim = new Map(claims.map((c) => [c.id, c.localId ?? c.srsClause ?? "-"]));
@@ -97,8 +111,10 @@ for (const e of entries) {
       ? "new"
       : resolvedIds.has(e.claimId)
         ? `\`${diff.resolved.find((r) => r.entry.claimId === e.claimId)!.from}\` → \`${e.status}\``
-        : "";
-  lines.push(`| ${e.text.slice(0, 80)} | ${e.status} | ${delta} | ${localIdByClaim.get(e.claimId) ?? "-"} | ${e.citation.slice(0, 90)} |`);
+        : relocatedIds.has(e.claimId)
+          ? "relocated (same anchor)"
+          : "";
+  lines.push(`| ${e.text.slice(0, 80)} | ${e.status} | ${delta} | ${localIdByClaim.get(e.claimId) ?? "-"} | ${(e.anchor ?? "-").slice(0, 70)} | ${e.citation.slice(0, 90)} |`);
 }
 
 if (diff.drifted.length > 0) {

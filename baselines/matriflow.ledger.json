@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "lastRunAt": "2026-11-04T13:39:46.014Z",
+  "entries": {
+    "clm_43dcbf97": {
+      "claimId": "clm_43dcbf97",
+      "text": "The system implements TOTP two-factor authentication with backup tokens and enforced setup.",
+      "source": "examples/matriflow-claims.md",
+      "status": "matched",
+      "citation": "targets/matriflow/app\\controllers\\AuthController.php:212: $totpSecret = $user['google_2fa_secret'];",
+      "anchor": "$totpSecret = $user['google_2fa_secret'];",
+      "location": "targets/matriflow/app\\controllers\\AuthController.php:212",
+      "verifiedAt": "2026-11-04T13:39:46.014Z"
+    },
+    "clm_2e469622": {
+      "claimId": "clm_2e469622",
+      "text": "Expected delivery date is calculated from LMP using Naegele's rule.",
+      "source": "examples/matriflow-claims.md",
+      "status": "matched",
+      "citation": "targets/matriflow/app\\core\\PregnancyCalculator.php:10: public static function calculateEDC(string $lmpDate): string",
+      "anchor": "public static function calculateEDC(string $lmpDate): string",
+      "location": "targets/matriflow/app\\core\\PregnancyCalculator.php:10",
+      "verifiedAt": "2026-11-04T13:39:46.014Z"
+    },
+    "clm_28fde859": {
+      "claimId": "clm_28fde859",
+      "text": "The system supports GoTyme as a payment method.",
+      "source": "examples/matriflow-claims.md",
+      "status": "unfound",
+      "citation": "searched D:/Projects/matriflow for \"GoTyme\"; no occurrence found",
+      "verifiedAt": "2026-11-04T13:39:46.014Z"
+    },
+    "clm_286455e6": {
+      "claimId": "clm_286455e6",
+      "text": "The system performs automatic nightly database backups.",
+      "source": "examples/matriflow-claims.md",
+      "status": "unfound",
+      "citation": "searched D:/Projects/matriflow for \"nightly\", \"backup schedule\", \"mysqldump\"; no occurrence found",
+      "verifiedAt": "2026-11-04T13:39:46.014Z"
+    },
+    "clm_4f3dbcd3": {
+      "claimId": "clm_4f3dbcd3",
+      "text": "Role-based access control distinguishes admin, doctor, secretary, and patient roles.",
+      "source": "examples/matriflow-claims.md",
+      "status": "partial",
+      "citation": "targets/matriflow/app\\config\\autoloader.php:54: 'RoleLayout'          => APP_PATH . '/core/RoleLayout.php',",
+      "anchor": "'RoleLayout'          => APP_PATH . '/core/RoleLayout.php',",
+      "location": "targets/matriflow/app\\config\\autoloader.php:54",
+      "verifiedAt": "2026-11-04T13:39:46.014Z"
+    }
+  }
+}

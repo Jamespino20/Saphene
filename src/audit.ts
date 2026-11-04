@@ -122,7 +122,7 @@ for (let i = 0; i < args.length; i++) {
 }
 
 if (!repoDir || !existsSync(repoDir)) {
-  console.error("Usage: npm run audit -- --repo <dir> [--focus code|flow|all] [--max-files N|0] [--all] [--out-dir audits] [--report <file>] [--update-ledger]");
+  console.error("Usage: saphene audit --repo <dir> [--focus code|flow|all] [--max-files N|0] [--all] [--out-dir audits] [--report <file>] [--update-ledger]");
   process.exit(1);
 }
 
@@ -333,6 +333,8 @@ const entries: LedgerEntry[] = findings.map((f) => ({
   source: f.file,
   status: f.verified ? "matched" : "partial",
   citation: `${f.file}:${f.line}: ${f.quote.slice(0, 120)}`,
+  anchor: f.quote.slice(0, 200),
+  location: `${f.file}:${f.line}`,
   verifiedAt: new Date().toISOString(),
 }));
 

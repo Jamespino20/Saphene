@@ -3,8 +3,34 @@
   "version": "0.1.0",
   "description": "Saphene: Clarity Through Evidence. Claim-ledger engine that verifies workspace memory against paper and repository evidence.",
   "type": "module",
+  "bin": {
+    "saphene": "bin/saphene.js"
+  },
+  "main": "dist-cli/cli.js",
+  "files": [
+    "bin",
+    "dist-cli",
+    "personalities",
+    "standards",
+    "examples/minimal-claims.md",
+    "examples/fixtures",
+    "examples/aliases.example.json",
+    "examples/profile.example.json",
+    "examples/agapay-claims.md",
+    "examples/anvilos-claims.md",
+    "examples/helm-agent-claims.md",
+    "examples/matriflow-claims.md",
+    "examples/saphene-self-claims.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "npm run build --prefix site && node scripts/copy-site-dist.mjs",
+    "build:cli": "tsc -p tsconfig.json --outDir dist-cli",
+    "prepack": "npm run build:cli",
     "guide": "tsx src/cli.ts guide",
     "help": "tsx src/cli.ts help",
     "verify": "tsx src/cli.ts verify",

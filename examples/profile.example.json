@@ -1,0 +1,9 @@
+{
+  "wordBand": [5000, 5423],
+  "termBudgets": {
+    "said": 7
+  },
+  "quoteBalance": true,
+  "maxParagraphWords": 120,
+  "crossFileNgram": 6
+}

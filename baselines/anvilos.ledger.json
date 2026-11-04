@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "lastRunAt": "2026-11-04T13:39:48.279Z",
+  "entries": {
+    "clm_6f2b0129": {
+      "claimId": "clm_6f2b0129",
+      "text": "AnvilOS implements RFC-compliant TOTP two-factor authentication with a drift window.",
+      "source": "examples/anvilos-claims.md",
+      "status": "matched",
+      "citation": "targets/anvilos/README.md:59: â”‚   â”‚   â”‚   â”œâ”€â”€ login/             # Login (username/email + TOTP)",
+      "anchor": "â”‚   â”‚   â”‚   â”œâ”€â”€ login/             # Login (username/email + TOTP)",
+      "location": "targets/anvilos/README.md:59",
+      "verifiedAt": "2026-11-04T13:39:48.279Z"
+    },
+    "clm_2b1e8f3e": {
+      "claimId": "clm_2b1e8f3e",
+      "text": "Role-based access control distinguishes SUPERADMIN, ADMIN, and STAFF roles.",
+      "source": "examples/anvilos-claims.md",
+      "status": "matched",
+      "citation": "targets/anvilos/README.md:77: â”‚   â”‚   â”‚   â””â”€â”€ users/             # User management (SUPERADMIN only)",
+      "anchor": "â”‚   â”‚   â”‚   â””â”€â”€ users/             # User management (SUPERADMIN only)",
+      "location": "targets/anvilos/README.md:77",
+      "verifiedAt": "2026-11-04T13:39:48.279Z"
+    },
+    "clm_7d8b88fa": {
+      "claimId": "clm_7d8b88fa",
+      "text": "The Prisma schema defines 14 models including NotificationRead and RateLimit.",
+      "source": "examples/anvilos-claims.md",
+      "status": "matched",
+      "citation": "targets/anvilos/README.md:217: - **Per-User Read Status** â€” NotificationRead junction table",
+      "anchor": "- **Per-User Read Status** â€” NotificationRead junction table",
+      "location": "targets/anvilos/README.md:217",
+      "verifiedAt": "2026-11-04T13:39:48.279Z"
+    },
+    "clm_2c0e2c85": {
+      "claimId": "clm_2c0e2c85",
+      "text": "Login is rate-limited to 5 attempts per 15 minutes with database-backed limits.",
+      "source": "examples/anvilos-claims.md",
+      "status": "matched",
+      "citation": "targets/anvilos/README.md:110: â”‚   â”‚   â”œâ”€â”€ rate-limit.ts          # DB-backed rate limiting",
+      "anchor": "â”‚   â”‚   â”œâ”€â”€ rate-limit.ts          # DB-backed rate limiting",
+      "location": "targets/anvilos/README.md:110",
+      "verifiedAt": "2026-11-04T13:39:48.279Z"
+    },
+    "clm_18dc0048": {
+      "claimId": "clm_18dc0048",
+      "text": "The POS terminal cart pane is draggable between 280px and 550px.",
+      "source": "examples/anvilos-claims.md",
+      "status": "matched",
+      "citation": "targets/anvilos/src\\app\\(dashboard)\\pos\\client.tsx:182: const newWidth = Math.min(Math.max(startWidth + diff, 280), 550);",
+      "anchor": "const newWidth = Math.min(Math.max(startWidth + diff, 280), 550);",
+      "location": "targets/anvilos/src\\app\\(dashboard)\\pos\\client.tsx:182",
+      "verifiedAt": "2026-11-04T13:39:48.279Z"
+    },
+    "clm_c6669b5": {
+      "claimId": "clm_c6669b5",
+      "text": "Payments support cash, credit with due date, and cheque with bank details.",
+      "source": "examples/anvilos-claims.md",
+      "status": "matched",
+      "citation": "targets/anvilos/README.md:143: - **Payment Methods** â€” Cash, Credit (with due date), Cheque (with bank details)",
+      "anchor": "- **Payment Methods** â€” Cash, Credit (with due date), Cheque (with bank details)",
+      "location": "targets/anvilos/README.md:143",
+      "verifiedAt": "2026-11-04T13:39:48.279Z"
+    },
+    "clm_d4a2b11": {
+      "claimId": "clm_d4a2b11",
+      "text": "A daily sales report cron endpoint exists under the API.",
+      "source": "examples/anvilos-claims.md",
+      "status": "matched",
+      "citation": "targets/anvilos/README.md:81: â”‚   â”‚   â”‚   â”œâ”€â”€ cron/daily-sales/  # Daily sales report cron",
+      "anchor": "â”‚   â”‚   â”‚   â”œâ”€â”€ cron/daily-sales/  # Daily sales report cron",
+      "location": "targets/anvilos/README.md:81",
+      "verifiedAt": "2026-11-04T13:39:48.279Z"
+    },
+    "clm_39121568": {
+      "claimId": "clm_39121568",
+      "text": "AnvilOS is built with Vue.js and Django.",
+      "source": "examples/anvilos-claims.md",
+      "status": "unfound",
+      "citation": "searched D:/Projects/AnvilOS for \"Vue\", \"django\"; no occurrence found",
+      "verifiedAt": "2026-11-04T13:39:48.279Z"
+    },
+    "clm_6a9463f": {
+      "claimId": "clm_6a9463f",
+      "text": "AnvilOS uses PostgreSQL hosted on NeonDB.",
+      "source": "examples/anvilos-claims.md",
+      "status": "matched",
+      "citation": "targets/anvilos/AGENTS.md:290: - **Tech**: Next.js 15.5, Prisma (NeonDB PostgreSQL), Tailwind CSS v4",
+      "anchor": "- **Tech**: Next.js 15.5, Prisma (NeonDB PostgreSQL), Tailwind CSS v4",
+      "location": "targets/anvilos/AGENTS.md:290",
+      "verifiedAt": "2026-11-04T13:39:48.279Z"
+    },
+    "clm_18f60d33": {
+      "claimId": "clm_18f60d33",
+      "text": "AnvilOS began as HardwareHub, a Java Swing and MySQL desktop application.",
+      "source": "examples/anvilos-claims.md",
+      "status": "partial",
+      "citation": "targets/anvilos/README.md:3: > **From college thesis to production SaaS.** AnvilOS (formerly HardwareHub) is a web-based Point of Sale (POS), Inventory Management, and Supplier Management platform built for hardware stores and industrial supply businesses.",
+      "anchor": "> **From college thesis to production SaaS.** AnvilOS (formerly HardwareHub) is a web-based Point of Sale (POS), Inventory Management, and Supplier Management platform built for hardware stores and industrial supply businesses.",
+      "location": "targets/anvilos/README.md:3",
+      "verifiedAt": "2026-11-04T13:39:48.279Z"
+    }
+  }
+}

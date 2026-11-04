@@ -15,15 +15,17 @@ const sections = [
 ];
 
 const commands = [
-  ["npm run init", "Scaffold a memory directory with starter claims."],
-  ["npm run verify", "Verify one file's claims against repository evidence."],
-  ["npm run bridge", "Verify claims against external target repositories."],
-  ["npm run memory", "Audit a memory directory and compare its ledger."],
-  ["npm run audit", "Run the reviewer-persona code and business-flow panel."],
-  ["npm run review", "Gate a PR against a committed evidence baseline."],
-  ["npm run mcp", "Run the standard MCP server for coding agents."],
-  ["npm run guide", "Full walkthrough for any command; --check verifies guide coverage."],
-  ["npm test", "Run the deterministic 7-check self-test suite."],
+  ["saphene init", "Scaffold a memory directory with starter claims."],
+  ["saphene verify", "Verify one file against itself or a repository."],
+  ["saphene bridge", "Verify a structured claims file against target repositories."],
+  ["saphene memory", "Audit a memory directory and compare its ledger."],
+  ["saphene consistency", "Check claims from multiple documents against each other."],
+  ["saphene profile", "Run project-configured mechanical checks beside claim verification."],
+  ["saphene audit", "Run the reviewer-persona code and business-flow panel."],
+  ["saphene review", "Gate a PR against a committed evidence baseline."],
+  ["saphene mcp", "Run the MCP server for coding agents."],
+  ["saphene guide", "Full walkthrough for any command; --check verifies guide coverage."],
+  ["saphene test", "Run the deterministic self-test suite."],
 ];
 
 /**
@@ -245,6 +247,12 @@ npm test`}</Code>
             <Code>{`- Multi-tenant isolation uses a schema-per-tenant strategy.
   category: srs | srsClause: 6.1 | requirementType: security
   evidence: tenant_id, schema, Prisma proxy`}</Code>
+            <p className="text-sm text-muted font-sans leading-relaxed">
+              Negative claims use <code className="font-mono text-sage text-xs">polarity: negative</code> — absence becomes <span className="badge badge-matched">matched</span>,
+              strong verb-bearing evidence or two corroborating hints become <span className="badge badge-mismatch">mismatch</span>, and a single weak noun/path token becomes <span className="badge badge-partial">partial</span>. Future claims use <code className="font-mono text-sage text-xs">status: planned</code> and
+              verify against the plan document. Add <code className="font-mono text-sage text-xs">scope:</code> path fragments to limit a search,
+              and keep entity aliases/distinct names in <code className="font-mono text-sage text-xs">.saphene/aliases.json</code>.
+            </p>
           </section>
 
           {/* Ledger & Drift */}
@@ -294,7 +302,7 @@ npm run audit -- --repo D:/Projects/Agapay --focus security`}</Code>
               <h2 className="font-mono text-2xl font-bold text-ink">MCP Server for Agents</h2>
             </div>
             <p className="text-sm text-muted font-sans leading-relaxed">
-              Exposes <code className="font-mono text-sage text-xs">saphene_bridge</code>, <code className="font-mono text-sage text-xs">saphene_memory</code>, and <code className="font-mono text-sage text-xs">saphene_verify</code> via Model Context Protocol so an agent can verify its claims before committing code.
+              Exposes <code className="font-mono text-sage text-xs">saphene_bridge</code>, <code className="font-mono text-sage text-xs">saphene_memory</code>, <code className="font-mono text-sage text-xs">saphene_verify</code>, <code className="font-mono text-sage text-xs">saphene_consistency</code>, and <code className="font-mono text-sage text-xs">saphene_profile</code> via Model Context Protocol so an agent can verify its claims before committing code.
             </p>
             <Code>{`npm run mcp`}</Code>
           </section>
@@ -368,6 +376,134 @@ MODEL_FALLBACK_MODEL=gemini-3.5-flash`}</Code>
                   Any OpenAI-compatible provider — this deployment runs Meta Muse Spark (<code className="font-mono text-sage text-xs">muse-spark-1.3-contributor</code>) as primary
                   with Google Gemini as the automatic fallback. Model calls are optional throughout —
                   pass <code className="font-mono text-amber text-xs">--no-model</code> for fully offline, deterministic verification.
+                </p>
+              </div>
+              <div className="facet-card p-6">
+                <h3 className="font-mono text-base font-semibold text-ink">How do I run Saphene without calling source files?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted font-sans">
+                  Packaged installs expose a real <code className="font-mono text-sage text-xs">saphene</code> bin: <code className="font-mono text-sage text-xs">saphene bridge claims.md --repo ./app</code>.
+                  In a source clone, use <code className="font-mono text-sage text-xs">npx tsx saphene bridge ...</code> — no <code className="font-mono text-xs">src/cli.ts</code> paths and no npm-script relay.
+                </p>
+              </div>
+              <div className="facet-card p-6">
+                <h3 className="font-mono text-base font-semibold text-ink">Why did everything come back unfound?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted font-sans">
+                  Usually one of three things: the claim has no literal evidence hints, the target repo was not passed, or prose/testimony was excluded.
+                  Add <code className="font-mono text-sage text-xs">evidence: identifier, path/to/file.ts, Exact Phrase</code>, pass <code className="font-mono text-sage text-xs">--repo</code>,
+                  and use <code className="font-mono text-amber text-xs">--code-only</code> when only implementation should count.
+                </p>
+              </div>
+              <div className="facet-card p-6">
+                <h3 className="font-mono text-base font-semibold text-ink">Which command should I use?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted font-sans">
+                  One file against itself: <code className="font-mono text-sage text-xs">verify memory</code>. One file against a repo: <code className="font-mono text-sage text-xs">verify paper --repo</code>.
+                  Structured claims/SRS file: <code className="font-mono text-sage text-xs">bridge</code>. Whole memory directory: <code className="font-mono text-sage text-xs">memory</code>.
+                  Documents against each other: <code className="font-mono text-sage text-xs">consistency</code>.
+                </p>
+              </div>
+              <div className="facet-card p-6">
+                <h3 className="font-mono text-base font-semibold text-ink">Where does the ledger live?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted font-sans">
+                  Memory audits always write <code className="font-mono text-sage text-xs">&lt;memory-dir&gt;/.saphene/ledger.json</code>, even when zero claims are ledgered.
+                  Bridge writes a JSON baseline when <code className="font-mono text-sage text-xs">--out</code> ends in <code className="font-mono text-xs">.json</code>; review diffs against that baseline.
+                </p>
+              </div>
+              <div className="facet-card p-6">
+                <h3 className="font-mono text-base font-semibold text-ink">What does <code className="font-mono text-sage text-xs">useModel</code> actually change?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted font-sans">
+                  Extraction only. With a model, Saphene can infer claims and evidence hints from freeform prose. Without one, structured claim blocks win and deterministic prose extraction runs.
+                  Verdicts still come from the evidence search either way.
+                </p>
+              </div>
+              <div className="facet-card p-6">
+                <h3 className="font-mono text-base font-semibold text-ink">What does a negative <span className="badge badge-matched">matched</span> mean?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted font-sans">
+                  The forbidden evidence was absent inside the declared scope. It is scoped absence, not universal proof.
+                  Strong verb-bearing evidence, or two corroborating hints, becomes <span className="badge badge-mismatch">mismatch</span>;
+                  one weak noun/path token becomes <span className="badge badge-partial">partial</span> instead of inverting the claim.
+                </p>
+              </div>
+              <div className="facet-card p-6">
+                <h3 className="font-mono text-base font-semibold text-ink">Why didn't a moved line count as drift?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted font-sans">
+                  Ledgers store the verbatim anchor quote beside the file:line location. If the same anchor moves to a new line,
+                  Saphene reports it as relocated. Drift is reserved for verdict regressions.
+                </p>
+              </div>
+              <div className="facet-card p-6">
+                <h3 className="font-mono text-base font-semibold text-ink">Does Saphene ship style rules?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted font-sans">
+                  No built-in taste. The mechanical profile is project-owned JSON: length bands, repeated-term budgets,
+                  quote balance, paragraph ceilings, and cross-file n-grams only run when your config asks for them.
+                </p>
+              </div>
+              <div className="facet-card p-6">
+                <h3 className="font-mono text-base font-semibold text-ink">Is Saphene a SonarQube, Semgrep, or Snyk replacement?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted font-sans">
+                  No. Those tools are mature static-analysis and vulnerability platforms. Saphene sits above them:
+                  it verifies whether requirements, documentation, specifications, and agent memory still match the code.
+                  Semgrep can tell you code matches known bad patterns; Saphene tells you whether the claim about the code still has evidence.
+                </p>
+              </div>
+              <div className="facet-card p-6">
+                <h3 className="font-mono text-base font-semibold text-ink">Can Saphene replace SAST, SCA, or a security audit?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted font-sans">
+                  No. Saphene is not a substitute for SAST, dependency/SCA scanning, container or IaC scanning, penetration testing,
+                  or a qualified security review. Its audit panel can surface review candidates with receipts, but scanner-grade
+                  dataflow, taint analysis, and vulnerability intelligence are out of scope.
+                </p>
+              </div>
+              <div className="facet-card p-6">
+                <h3 className="font-mono text-base font-semibold text-ink">How accurate are Saphene verdicts?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted font-sans">
+                  Heuristic verdicts are literal evidence checks: strong for identifiers, paths, table names, and exact phrases;
+                  weak for paraphrase and semantics. Model-backed extraction and audit findings can contain false positives or miss issues.
+                  Treat every verdict as a receipt to inspect, not as proof beyond the cited evidence.
+                </p>
+              </div>
+              <div className="facet-card p-6">
+                <h3 className="font-mono text-base font-semibold text-ink">Does <span className="badge badge-matched">matched</span> mean a claim is true?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted font-sans">
+                  It means the expected evidence was located in the searched scope. It does not prove runtime behavior, correctness,
+                  security, performance, or compliance. A matched TODO, comment, mock, or stale document can still mislead — open the receipt.
+                </p>
+              </div>
+              <div className="facet-card p-6">
+                <h3 className="font-mono text-base font-semibold text-ink">Does <span className="badge badge-unfound">unfound</span> mean a claim is false?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted font-sans">
+                  No. It means Saphene did not locate the expected evidence in the searched files. The implementation may use different names,
+                  live outside the target scope, be generated at runtime, or be described with paraphrased evidence hints.
+                </p>
+              </div>
+              <div className="facet-card p-6">
+                <h3 className="font-mono text-base font-semibold text-ink">Are Saphene's ISO references a compliance certification?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted font-sans">
+                  No. Saphene maps findings and controls to standards such as ISO/IEC 25010, ISO/IEC 27002 themes, ISO/IEC/IEEE 29148,
+                  and its ISO/IEC 26514 working interpretation for traceability. That mapping supports review organization;
+                  it is not certification, accreditation, or a claim that a repository complies with any standard.
+                </p>
+              </div>
+              <div className="facet-card p-6">
+                <h3 className="font-mono text-base font-semibold text-ink">Are cross-document consistency results definitive?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted font-sans">
+                  No. Consistency checks are deterministic candidate finders for negations, incompatible assignments, access conflicts,
+                  identity conflicts, and duplicate IDs. They require human review; literary language, aliases, chronology,
+                  and intentional unreliable narration can all create false candidates.
+                </p>
+              </div>
+              <div className="facet-card p-6">
+                <h3 className="font-mono text-base font-semibold text-ink">What are the limits of <code className="font-mono text-amber text-xs">--no-model</code>?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted font-sans">
+                  It is deterministic and offline, but literal. It will miss paraphrases, inferred behavior, generated code,
+                  and evidence hidden behind indirection. Use model extraction when you need broader claim discovery,
+                  and deterministic mode when reproducibility matters more than recall.
+                </p>
+              </div>
+              <div className="facet-card p-6">
+                <h3 className="font-mono text-base font-semibold text-ink">Can Saphene guarantee no drift or no vulnerabilities?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted font-sans">
+                  No tool can honestly guarantee that. Saphene reduces a specific risk: confident statements outliving their evidence.
+                  It does not guarantee secure, correct, compliant, or production-ready software.
                 </p>
               </div>
             </div>

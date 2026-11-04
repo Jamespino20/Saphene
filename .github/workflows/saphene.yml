@@ -17,16 +17,24 @@ jobs:
           node-version: 22
 
       - name: Install
-        run: npm install
+        run: npm ci
 
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Clone verification targets
-        run: |
-          mkdir -p targets
-          git clone --depth 1 https://github.com/Jamespino20/matriflow.git targets/matriflow
-          git clone --depth 1 https://github.com/Jamespino20/AnvilOS.git targets/anvilos
+      - name: Checkout MatriFlow target (pinned)
+        uses: actions/checkout@v4
+        with:
+          repository: Jamespino20/matriflow
+          ref: 1b00b467038684b27d7d7b97d74f78e033e58fa8
+          path: targets/matriflow
+
+      - name: Checkout AnvilOS target (pinned)
+        uses: actions/checkout@v4
+        with:
+          repository: Jamespino20/AnvilOS
+          ref: 4576fe9f1727de160520be0d03fb96d906084a49
+          path: targets/anvilos
 
       - name: Configure model (optional)
         env:
@@ -43,10 +51,16 @@ jobs:
           fi
 
       - name: Verify MatriFlow claims
-        run: npm run bridge -- examples/matriflow-claims.md --repo targets/matriflow | tee bridge-matriflow.txt
+        shell: bash
+        run: |
+          set -o pipefail
+          npx tsx saphene bridge examples/matriflow-claims.md --repo targets/matriflow | tee bridge-matriflow.txt
 
       - name: Verify AnvilOS claims
-        run: npm run bridge -- examples/anvilos-claims.md --repo targets/anvilos | tee bridge-anvilos.txt
+        shell: bash
+        run: |
+          set -o pipefail
+          npx tsx saphene bridge examples/anvilos-claims.md --repo targets/anvilos | tee bridge-anvilos.txt
 
       - name: Job summary
         if: always()

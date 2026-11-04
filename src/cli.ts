@@ -5,15 +5,19 @@
 //        --no-model, --code-only, --out <file>, --exclude <pattern> (repeatable), --help
 
 import { runAdapter } from "./verify.js";
-import { loadLedger, saveLedger, diffLedger, scanMemoryFiles, sleep, type Ledger, type LedgerEntry } from "./ledger.js";
+import { extractClaims } from "./extract.js";
+import { loadLedger, saveLedger, diffLedger, scanMemoryFiles, scanMemoryFilesWithDiagnostics, sleep, type Ledger, type LedgerEntry } from "./ledger.js";
 import { AUTO_WRITEBACK_CONFIDENCE, FLAG_FOR_HUMAN_CONFIDENCE, writeBackDecision } from "./standards.js";
 import { drawProgress, endProgress } from "./progress.js";
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
 import { join, basename } from "node:path";
 import { type TraceabilityRow } from "./schema.js";
+import { checkConsistency } from "./consistency.js";
+import { loadMechanicalProfile, runMechanicalProfile } from "./profile.js";
+import { loadAliasTableFromFile, loadAliasTables, mergeAliasTables } from "./aliases.js";
 
 const args = process.argv.slice(2);
-const KNOWN_COMMANDS = ["init", "verify", "bridge", "memory", "help", "guide"] as const;
+const KNOWN_COMMANDS = ["init", "verify", "bridge", "memory", "consistency", "profile", "help", "guide"] as const;
 const firstPositional = args[0];
 const command = (KNOWN_COMMANDS as readonly string[]).includes(firstPositional)
   ? firstPositional
@@ -54,6 +58,7 @@ function printSummary(claims: { id: string; text: string; category: string; srsC
     `  ${summary.total} claims | ${summary.matched} matched | ${summary.partial} partial | ` +
       `${summary.mismatch} mismatch | ${summary.unfound} unfound`,
   );
+  console.log("  note: matched = literal evidence hit located in scope; it is not behavioral proof. Open the receipt.");
   for (const v of verdicts) {
     const claim = claims.find((c) => c.id === v.claimId);
     const srs =
@@ -108,15 +113,15 @@ const GUIDES: Record<string, CommandGuide> = {
     seeAlso: "memory, verify",
   },
   verify: {
-    summary: "Verify one file's claims against repository evidence.",
-    usage: ["saphene verify <file> [memory|paper|helm] [--no-model]"],
-    flags: [["memory|paper|helm", "evidence adapter: workspace memory (default), docs+repo paper, reserved helm"], ["--no-model", "offline heuristic extraction — no API key, deterministic"]],
-    examples: ["saphene verify README.md memory --no-model", "saphene verify claims.md paper --repo ./app"],
+    summary: "Verify one file against itself (memory) or a repository (paper).",
+    usage: ["saphene verify <file> [memory|paper|helm] [--repo <dir>] [--paper <file>] [--no-model]"],
+    flags: [["memory|paper|helm", "memory = other lines in the same file are evidence; paper = repo/docs are evidence and the source never testifies for itself"], ["--repo <dir>", "paper-mode evidence repository"], ["--paper <file>", "paper-mode evidence document"], ["--code-only", "only code files count as evidence in paper mode"], ["--no-model", "offline heuristic extraction — no API key, deterministic"]],
+    examples: ["saphene verify README.md memory --no-model", "saphene verify README.md paper --repo ./app --no-model"],
     exits: [["0", "all claims matched"], ["1", "any claim unfound or mismatch — human review"]],
-    seeAlso: "bridge, memory",
+    seeAlso: "bridge (structured claims file), memory (whole directory), claims (hint syntax)",
   },
   bridge: {
-    summary: "Verify claims in a file against one or more target repositories.",
+    summary: "Verify a structured claims/SRS file against one or more target repositories.",
     usage: ["saphene bridge <claims-file> [--repo <dir>] [--paper <file>] [--code-only] [--no-model] [--out <file>]"],
     flags: [["--repo <dir>", "repeatable: repository to search for evidence"], ["--paper <file>", "repeatable: document to search"], ["--code-only", "code files count as evidence; prose and claims files do not (prevents self-testimony)"], ["--no-model", "offline heuristic extraction"], ["--out <file>", ".json writes a ledger baseline; anything else writes a markdown matrix"]],
     examples: ["saphene bridge claims.md --repo ./app --code-only --no-model", "saphene bridge claims.md --repo ./app --out .saphene/baseline.json"],
@@ -140,54 +145,78 @@ const GUIDES: Record<string, CommandGuide> = {
     seeAlso: "help",
   },
   memory: {
-    summary: "Audit every .md in a memory directory, write the ledger, diff against the last run.",
+    summary: "Audit every .md in a memory directory, write <memory-dir>/.saphene/ledger.json, and diff against the last run.",
     usage: ["saphene memory [--memory-dir <dir>] [--repo <dir>] [--paper <file>] [--no-model]"],
-    flags: [["--memory-dir <dir>", "memory root (default ./memory)"], ["--repo <dir>", "repeatable: evidence target"], ["--no-model", "offline heuristics"]],
+    flags: [["--memory-dir <dir>", "memory root (default ./memory)"], ["--repo <dir>", "repeatable: evidence target"], ["--code-only", "only code files count as evidence"], ["--no-model", "offline heuristics; structured blocks win, otherwise factual prose with inferable identifiers becomes claims"]],
     examples: ["saphene memory --memory-dir ./memory --repo ./app --no-model"],
     exits: [["0", "no drift"], ["1", "drift detected, or any claim unfound/mismatch"]],
-    seeAlso: "init, verify",
+    seeAlso: "init, verify, consistency (docs against each other)",
+  },
+  consistency: {
+    summary: "Check claims from multiple documents against each other for contradictions.",
+    usage: ["saphene consistency <files-or-dirs...> [--aliases <file>]"],
+    flags: [["--aliases <file>", "JSON alias/distinct-entity table; .saphene/aliases.json is also auto-loaded"]],
+    examples: ["saphene consistency docs/brief.md docs/characters.md", "saphene consistency ./story-bible --aliases .saphene/aliases.json"],
+    exits: [["0", "no potential contradictions found"], ["1", "potential contradictions require human review"]],
+    seeAlso: "bridge, claims",
+  },
+  profile: {
+    summary: "Run deterministic mechanical checks from a project-owned JSON profile.",
+    usage: ["saphene profile <files-or-dirs...> --config <profile.json>"],
+    flags: [["--config <file>", "JSON profile: wordBand, termBudgets, quoteBalance, maxParagraphWords, crossFileNgram"]],
+    examples: ["saphene profile ./docs --config .saphene/profile.json"],
+    exits: [["0", "no mechanical violations"], ["1", "violations found"]],
+    seeAlso: "consistency, verify",
   },
 };
 
 const STANDALONE_GUIDES: Record<string, CommandGuide> = {
+  claims: {
+    summary: "Evidence-hint syntax and the minimal structured claims format.",
+    usage: ["- Claim text.", "  category: srs | srsClause: 4.2 | localId: REQ-014 | requirementType: functional | priority: mandatory", "  evidence: literalIdentifier, path/to/file.ts, Exact Phrase"],
+    flags: [["evidence:", "comma-separated literal identifiers, paths, table names, or exact phrases — never paraphrases"], ["polarity: negative", "assert absence/ignorance; strong/corroborated forbidden evidence becomes mismatch, one weak token becomes partial, absence becomes matched"], ["status: planned", "future claim verified against the plan/source document, not current implementation"], ["scope: a.md, b.md", "limit evidence search to paths containing these fragments"]],
+    examples: ["saphene bridge examples/minimal-claims.md --repo . --code-only --no-model", "saphene guide bridge"],
+    exits: [["0", "n/a"], ["1", "n/a"]],
+    seeAlso: "bridge, verify, consistency",
+  },
   review: {
     summary: "PR gate: diff verdicts against a committed evidence baseline ledger.",
-    usage: ["npx tsx src/review.ts --claims <file> --repo <dir> --ledger <path> [--code-only] [--update-ledger]"],
+    usage: ["saphene review --claims <file> --repo <dir> --ledger <path> [--code-only] [--update-ledger]"],
     flags: [["--claims <file>", "claims file to verify"], ["--repo <dir>", "repository under review"], ["--ledger <path>", "committed JSON baseline"], ["--code-only", "required when the claims file lives inside the repo (prevents self-testimony)"], ["--update-ledger", "overwrite the baseline with this run"]],
-    examples: ["npx tsx src/review.ts --claims claims.md --repo ./ --code-only --ledger .saphene/baseline.json"],
+    examples: ["saphene review --claims claims.md --repo ./ --code-only --ledger .saphene/baseline.json"],
     exits: [["0", "no drift"], ["1", "drift detected"]],
     seeAlso: "bridge",
   },
   audit: {
     summary: "Persona-panel code and business-flow audit; timestamped markdown report.",
-    usage: ["npm run audit -- --repo <dir> [--focus all|security|performance|flow] [--max-files N|0] [--all] [--update-ledger]"],
+    usage: ["saphene audit --repo <dir> [--focus all|security|performance|flow] [--max-files N|0] [--all] [--update-ledger]"],
     flags: [["--focus", "limit the panel (default all)"], ["--max-files", "cap files scanned (default 12; 0 = no cap)"], ["--all", "audit every eligible file, no cap"], ["--update-ledger", "persist findings to the audit ledger"]],
-    examples: ["npm run audit -- --repo ./app --focus security --update-ledger", "npm run audit -- --repo ./app --all"],
+    examples: ["saphene audit --repo ./app --focus security --update-ledger", "saphene audit --repo ./app --all"],
     exits: [["0", "no critical findings"], ["1", "critical findings present"], ["2", "some files unchecked (provider errors) — not a clean bill"]],
     seeAlso: "review",
   },
   mcp: {
     summary: "Run the MCP stdio server for coding agents.",
-    usage: ["npm run mcp", "npm run mcp -- --inspect"],
+    usage: ["saphene mcp", "saphene mcp --inspect"],
     flags: [["--inspect", "list registered tools and exit"]],
-    examples: ["npm run mcp"],
+    examples: ["saphene mcp"],
     exits: [["0", "server started (runs until killed)"]],
     seeAlso: "bridge, memory",
   },
   drift: {
     summary: "Inject a drift into a file copy; report whether detection fires.",
-    usage: ["npx tsx src/drift-harness.ts <good-file> <drifted-file> <drift-text>"],
+    usage: ["saphene drift <good-file> <drifted-file> <drift-text>"],
     flags: [],
-    examples: ["npx tsx src/drift-harness.ts README.md drifted.md 'extra claim line'"],
+    examples: ["saphene drift README.md drifted.md 'extra claim line'"],
     exits: [["0", "drift detected"], ["1", "not separately detected"]],
     seeAlso: "review",
   },
   test: {
-    summary: "7-check deterministic self-test suite. No model key needed.",
-    usage: ["npm test"],
+    summary: "6-check deterministic self-test suite. No model key needed.",
+    usage: ["saphene test"],
     flags: [],
-    examples: ["npm test"],
-    exits: [["0", "7/7 checks passed"], ["1", "one or more checks failed"]],
+    examples: ["saphene test"],
+    exits: [["0", "6/6 checks passed"], ["1", "one or more checks failed"]],
     seeAlso: "verify, bridge",
   },
 };
@@ -295,6 +324,76 @@ async function main(): Promise<number> {
     return 0;
   }
 
+  if (command === "consistency" || command === "profile") {
+    const flagWithValue = new Set(["--aliases", "--config"]);
+    const positional = args.filter(
+      (a, i) => !a.startsWith("--") && a !== command && !flagWithValue.has(args[i - 1]),
+    );
+    const expandInputs = (inputs: string[]): string[] => {
+      const files: string[] = [];
+      for (const input of inputs) {
+        if (!existsSync(input)) continue;
+        if (statSync(input).isDirectory()) files.push(...scanMemoryFiles(input));
+        else files.push(input);
+      }
+      return [...new Set(files)];
+    };
+    const files = expandInputs(positional);
+    if (files.length === 0) {
+      console.error(`Usage: saphene ${command} <files-or-dirs...>`);
+      return 1;
+    }
+
+    if (command === "consistency") {
+      const aliasesIdx = args.indexOf("--aliases");
+      const explicit = aliasesIdx !== -1 ? loadAliasTableFromFile(args[aliasesIdx + 1]) : undefined;
+      const aliases = mergeAliasTables([
+        loadAliasTables(files[0], positional),
+        ...(explicit ? [explicit] : []),
+      ]);
+      const documents = files.map((file) => {
+        const content = readFileSync(file, "utf8");
+        return { source: file, content, claims: extractClaims(file, content, aliases) };
+      });
+      const totalClaims = documents.reduce((sum, d) => sum + d.claims.length, 0);
+      const conflicts = checkConsistency(documents, aliases);
+      console.log(`Saphene consistency — ${documents.length} documents | ${totalClaims} claims`);
+      if (conflicts.length === 0) {
+        console.log("  no potential cross-document contradictions found");
+        return 0;
+      }
+      console.log(`  ${conflicts.length} potential contradiction(s) — human review required`);
+      for (const conflict of conflicts) {
+        console.log(`\n  [${conflict.type}] ${conflict.detail}`);
+        console.log(`    A ${conflict.a.citation}: ${conflict.a.text.slice(0, 120)}`);
+        console.log(`    B ${conflict.b.citation}: ${conflict.b.text.slice(0, 120)}`);
+      }
+      return 1;
+    }
+
+    const configIdx = args.indexOf("--config");
+    let profile;
+    try {
+      profile = configIdx !== -1 ? loadMechanicalProfile(args[configIdx + 1]) : undefined;
+    } catch (err) {
+      console.error(err instanceof Error ? err.message : String(err));
+      return 1;
+    }
+    if (!profile) {
+      console.error("Usage: saphene profile <files-or-dirs...> --config <profile.json>");
+      console.error('Example profile: { "wordBand": [5000, 5423], "termBudgets": { "said": 7 }, "quoteBalance": true, "maxParagraphWords": 120, "crossFileNgram": 6 }');
+      return 1;
+    }
+    const documents = files.map((file) => ({ file, content: readFileSync(file, "utf8") }));
+    const violations = runMechanicalProfile(documents, profile);
+    console.log(`Saphene profile — ${documents.length} files | ${violations.length} violation(s)`);
+    for (const violation of violations.slice(0, 100)) {
+      console.log(`  [${violation.rule}] ${violation.file}: ${violation.detail}`);
+    }
+    if (violations.length > 100) console.log(`  ... ${violations.length - 100} more`);
+    return violations.length > 0 ? 1 : 0;
+  }
+
   if (command === "bridge") {
     const positional = args.filter(
       (a, i) =>
@@ -338,10 +437,10 @@ async function main(): Promise<number> {
 
   if (traceability.length > 0) {
     const matrix = [
-      "| Claim | SRS clause | Local ID | Type | Verdict | Citation |",
-      "| ----- | ---------- | -------- | ---- | ------- | -------- |",
+      "| Claim | SRS clause | Local ID | Type | Verdict | Anchor | Citation |",
+      "| ----- | ---------- | -------- | ---- | ------- | ------ | -------- |",
       ...traceability.map(
-        (r) => `| ${r.claimId} | ${r.srsClause} | ${r.localId} | ${r.requirementType} | ${r.status} | ${r.citation} |`,
+        (r) => `| ${r.claimId} | ${r.srsClause} | ${r.localId} | ${r.requirementType} | ${r.status} | ${(r.anchor ?? "-").slice(0, 80)} | ${r.citation} |`,
       ),
     ].join("\n");
       console.log("\nTraceability matrix:\n" + matrix);
@@ -368,6 +467,8 @@ async function main(): Promise<number> {
                       source: file,
                       status: v.status,
                       citation: v.citation,
+                      anchor: v.anchor,
+                      location: v.location,
                       verifiedAt: new Date().toISOString(),
                       ...(decision === "review" ? { needsReview: true as const } : {}),
                     },
@@ -397,13 +498,20 @@ async function main(): Promise<number> {
       return 1;
     }
     const targets = [...collectFlagValues("--repo"), ...collectFlagValues("--paper")];
+    const codeOnly = args.includes("--code-only");
     for (const t of targets) {
       if (!existsSync(t)) {
         console.error(`Target not found: ${t}`);
         return 1;
       }
     }
-    const files = scanMemoryFiles(dir);
+    const scan = scanMemoryFilesWithDiagnostics(dir);
+    const files = scan.files;
+    if (scan.truncated || scan.skipped > 0) {
+      console.error(
+        `Warning: memory scan ${scan.truncated ? "hit the 50-file cap" : ""}${scan.truncated && scan.skipped > 0 ? " and " : ""}${scan.skipped > 0 ? `skipped ${scan.skipped} unreadable item(s)` : ""}; results may be incomplete.`,
+      );
+    }
     if (files.length === 0) {
       console.error(`No .md files found in ${dir}`);
       return 1;
@@ -425,6 +533,7 @@ async function main(): Promise<number> {
         useModel: !noModel,
         targets,
         includeSource: false,
+        codeOnly,
       });
       done += 1;
       drawProgress(done, files.length, basename(file));
@@ -447,6 +556,8 @@ async function main(): Promise<number> {
           source: relFile,
           status: v.status,
           citation: v.citation,
+          anchor: v.anchor,
+          location: v.location,
           verifiedAt: new Date().toISOString(),
           ...(decision === "review" ? { needsReview: true as const } : {}),
         });
@@ -482,9 +593,16 @@ async function main(): Promise<number> {
         console.log(`    [${r.from} -> ${r.entry.status}] ${r.entry.text.slice(0, 90)}`);
       }
     }
+    if (diff.relocated.length > 0) {
+      console.log(`\n  RELOCATED (${diff.relocated.length} anchors unchanged; line hints moved):`);
+      for (const r of diff.relocated) {
+        console.log(`    ${r.entry.text.slice(0, 90)}`);
+        console.log(`      ${r.fromLocation ?? "unknown"} -> ${r.entry.location ?? "unknown"}`);
+      }
+    }
     console.log(
       `\n  vs previous run: ${diff.unchanged} unchanged, ${diff.added.length} added, ` +
-        `${diff.resolved.length} resolved, ${diff.drifted.length} drifted`,
+        `${diff.resolved.length} resolved, ${diff.drifted.length} drifted, ${diff.relocated.length} relocated`,
     );
     if (flagged.length > 0) {
       console.log(
@@ -507,7 +625,10 @@ async function main(): Promise<number> {
   }
 
   const positional = args.filter(
-    (a, i) => !a.startsWith("--") && a !== "verify" && args[i - 1] !== "--memory-dir" && args[i - 1] !== "--out",
+    (a, i) =>
+      !a.startsWith("--") &&
+      a !== "verify" &&
+      !["--memory-dir", "--out", "--repo", "--paper"].includes(args[i - 1]),
   );
   const [file, adapter = "memory"] = positional;
 
@@ -521,10 +642,25 @@ async function main(): Promise<number> {
     return 1;
   }
 
+  const targets = [...collectFlagValues("--repo"), ...collectFlagValues("--paper")];
+  for (const target of targets) {
+    if (!existsSync(target)) {
+      console.error(`Target not found: ${target}`);
+      return 1;
+    }
+  }
+  if (adapter === "paper" && targets.length === 0) {
+    console.error("Paper mode requires --repo <dir> or --paper <file> (use bridge for a structured claims file, or memory to verify within the file).");
+    return 1;
+  }
+
   const content = readFileSync(file, "utf8");
   console.log(`Memory dir: ${memoryDir ?? "<cwd>/memory"}`);
   const { claims, verdicts } = await runAdapter(adapter as "memory" | "paper" | "helm", file, content, {
     useModel: !noModel,
+    targets,
+    includeSource: adapter === "memory",
+    codeOnly: args.includes("--code-only"),
   });
 
   console.log(`Saphene verify (${adapter}) — ${file}`);

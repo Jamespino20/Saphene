@@ -20,6 +20,9 @@ export interface Evidence {
   fetchedAt: string;
 }
 
+export type ClaimPolarity = "positive" | "negative";
+export type ClaimLifecycle = "planned" | "written" | "locked";
+
 export interface Claim {
   id: string;
   text: string;
@@ -33,8 +36,10 @@ export interface Claim {
   localId?: string;
   requirementType?: string;
   priority?: string;
+  polarity?: ClaimPolarity;
+  lifecycle?: ClaimLifecycle;
+  scope?: string[];
 }
-
 
 export interface AdapterResult {
   adapter: "memory" | "paper" | "helm";
@@ -49,6 +54,9 @@ export interface Verdict {
   citation: string;
   confidence: number;
   reason: string;
+  anchor?: string;
+  location?: string;
+  negation?: boolean;
 }
 
 export interface TraceabilityRow {
@@ -58,6 +66,7 @@ export interface TraceabilityRow {
   requirementType: string;
   status: VerdictStatus;
   citation: string;
+  anchor?: string;
 }
 
 export interface SessionSummary {
@@ -68,11 +77,4 @@ export interface SessionSummary {
     mismatch: number;
     unfound: number;
   };
-}
-
-export interface AdapterResult {
-  adapter: "memory" | "paper" | "helm";
-  source: string;
-  claims: Claim[];
-  verdicts: Verdict[];
 }

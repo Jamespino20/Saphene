@@ -12,12 +12,11 @@ interface Check {
 
 const checks: Check[] = [
   { name: "typecheck", command: "npx tsc --noEmit", expect: 0 },
-  { name: "bridge matriflow (heuristic, unfound expected)", command: "npx tsx src/cli.ts bridge examples/matriflow-claims.md --repo D:/Projects/matriflow --no-model", expect: 1 },
-  { name: "bridge anvilos (heuristic, unfound expected)", command: "npx tsx src/cli.ts bridge examples/anvilos-claims.md --repo D:/Projects/AnvilOS --no-model", expect: 1 },
-  { name: "bridge agapay code-only (all matched)", command: "npx tsx src/cli.ts bridge examples/agapay-claims.md --repo D:/Projects/Agapay --code-only --no-model", expect: 0 },
-  { name: "review matriflow baseline (no drift)", command: "npx tsx src/review.ts --claims examples/matriflow-claims.md --repo D:/Projects/matriflow --ledger .saphene/matriflow.ledger.json", expect: 0 },
-  { name: "verify README (heuristic, unfound expected)", command: "npx tsx src/cli.ts verify README.md memory --no-model", expect: 1 },
-  { name: "drift harness (drift not separately detected)", command: "npx tsx src/drift-harness.ts README.md drifted-selftest.md saphene selftest drift line for regression coverage.", expect: 1 },
+  { name: "bridge fixture matched (all matched)", command: "npx tsx src/cli.ts bridge examples/fixtures/claims-matched.md --repo examples/fixtures/repo --code-only --no-model", expect: 0 },
+  { name: "bridge fixture unfound (unfound expected)", command: "npx tsx src/cli.ts bridge examples/fixtures/claims-unfound.md --repo examples/fixtures/repo --code-only --no-model", expect: 1 },
+  { name: "review fixture baseline (no drift)", command: "npx tsx src/review.ts --claims examples/fixtures/claims-matched.md --repo examples/fixtures/repo --code-only --ledger examples/fixtures/baseline.ledger.json", expect: 0 },
+  { name: "review missing baseline (fail closed)", command: "npx tsx src/review.ts --claims examples/fixtures/claims-matched.md --repo examples/fixtures/repo --code-only --ledger examples/fixtures/missing.ledger.json", expect: 2 },
+  { name: "review corrupt baseline (fail closed)", command: "npx tsx src/review.ts --claims examples/fixtures/claims-matched.md --repo examples/fixtures/repo --code-only --ledger examples/fixtures/baseline-corrupt.json", expect: 2 },
 ];
 
 let failed = 0;
@@ -29,9 +28,6 @@ for (const check of checks) {
   console.log(`[${pass ? "PASS" : "FAIL"}] ${check.name} — exit ${got} (expected ${check.expect})`);
   if (!pass && res.stdout) console.log((res.stdout as string).split("\n").slice(0, 6).join("\n"));
 }
-
-const { unlinkSync, existsSync } = await import("node:fs");
-if (existsSync("drifted-selftest.md")) unlinkSync("drifted-selftest.md");
 
 console.log(`\n${checks.length - failed}/${checks.length} checks passed`);
 process.exitCode = failed > 0 ? 1 : 0;

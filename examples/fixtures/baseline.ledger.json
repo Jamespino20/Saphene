@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "lastRunAt": "2026-11-04T13:39:44.039Z",
+  "entries": {
+    "clm_2c3b9f0a": {
+      "claimId": "clm_2c3b9f0a",
+      "text": "The fixture service exposes a health check endpoint.",
+      "source": "examples/fixtures/claims-matched.md",
+      "status": "matched",
+      "citation": "examples/fixtures/repo/src\\health.ts:1: export function healthCheck() {",
+      "anchor": "export function healthCheck() {",
+      "location": "examples/fixtures/repo/src\\health.ts:1",
+      "verifiedAt": "2026-11-04T13:39:44.039Z"
+    },
+    "clm_68a38237": {
+      "claimId": "clm_68a38237",
+      "text": "Fixture sessions use JWT tokens scoped by tenant_id.",
+      "source": "examples/fixtures/claims-matched.md",
+      "status": "matched",
+      "citation": "examples/fixtures/repo/src\\session.ts:1: // Sessions are JWT-based and scoped to tenant_id.",
+      "anchor": "// Sessions are JWT-based and scoped to tenant_id.",
+      "location": "examples/fixtures/repo/src\\session.ts:1",
+      "verifiedAt": "2026-11-04T13:39:44.039Z"
+    }
+  }
+}

@@ -13,6 +13,8 @@ export interface LedgerEntry {
   citation: string;
   verifiedAt: string;
   needsReview?: boolean;
+  anchor?: string;
+  location?: string;
 }
 
 export interface Ledger {
@@ -44,17 +46,22 @@ export interface LedgerDiff {
   added: LedgerEntry[];
   resolved: Array<{ entry: LedgerEntry; from: VerdictStatus }>;
   drifted: Array<{ entry: LedgerEntry; from: VerdictStatus }>;
+  relocated: Array<{ entry: LedgerEntry; fromLocation?: string }>;
   unchanged: number;
 }
 
 export function diffLedger(prev: Ledger | null, current: LedgerEntry[]): LedgerDiff {
-  const diff: LedgerDiff = { added: [], resolved: [], drifted: [], unchanged: 0 };
+  const diff: LedgerDiff = { added: [], resolved: [], drifted: [], relocated: [], unchanged: 0 };
   for (const entry of current) {
     const p = prev?.entries[entry.claimId];
     if (!p) {
       diff.added.push(entry);
     } else if (p.status === entry.status) {
-      diff.unchanged += 1;
+      if (p.anchor && entry.anchor && p.anchor === entry.anchor && p.location !== entry.location) {
+        diff.relocated.push({ entry, fromLocation: p.location });
+      } else {
+        diff.unchanged += 1;
+      }
     } else if (
       RANK[entry.status] < RANK[p.status] ||
       (BAD.has(p.status) && BAD.has(entry.status))
@@ -71,34 +78,50 @@ const SKIP_DIRS = new Set(["node_modules", ".git", ".saphene", "dist", ".venv", 
 const MAX_MEMORY_FILES = 50;
 const MAX_MEMORY_FILE_BYTES = 200_000;
 
-export function scanMemoryFiles(root: string): string[] {
+export interface MemoryScan {
+  files: string[];
+  truncated: boolean;
+  skipped: number;
+}
+
+export function scanMemoryFilesWithDiagnostics(root: string): MemoryScan {
   const files: string[] = [];
+  let truncated = false;
+  let skipped = 0;
   const walk = (dir: string): void => {
-    if (files.length >= MAX_MEMORY_FILES) return;
     let entries: string[];
     try {
       entries = readdirSync(dir, { withFileTypes: true }).map((e) => e.name);
     } catch {
+      skipped += 1;
       return;
     }
     for (const name of entries.sort()) {
-      if (files.length >= MAX_MEMORY_FILES) return;
       const full = join(dir, name);
       let stat;
       try {
         stat = statSync(full);
       } catch {
+        skipped += 1;
         continue;
       }
       if (stat.isDirectory()) {
         if (!SKIP_DIRS.has(name)) walk(full);
       } else if (name.toLowerCase().endsWith(".md") && stat.size <= MAX_MEMORY_FILE_BYTES) {
+        if (files.length >= MAX_MEMORY_FILES) {
+          truncated = true;
+          continue;
+        }
         files.push(full);
       }
     }
   };
   walk(root);
-  return files;
+  return { files, truncated, skipped };
+}
+
+export function scanMemoryFiles(root: string): string[] {
+  return scanMemoryFilesWithDiagnostics(root).files;
 }
 
 export function sleep(ms: number): Promise<void> {
