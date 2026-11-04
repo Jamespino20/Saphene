@@ -375,7 +375,7 @@ All commands run from any directory (absolute paths). Exit codes matter on camer
 | 06 (CI, drifted) | `npx tsx D:/Projects/memory-ci/src/review.ts --claims claims/gate-claims.md --repo ./ --code-only --ledger .saphene/gate.baseline.json` | **DRIFT: `matched → unfound ⚠`**, exit 1 → GitHub check ✗ |
 | 06 (CI, corrected) | Same command on `main` | "No drift", exit 0 → GitHub check ✓ |
 | 08 (offline) | `npx tsx D:/Projects/memory-ci/src/cli.ts bridge claims/demo-claims.md --repo ./ --code-only --no-model` | Same verdicts, zero network. Terminal clearly shows `--no-model` |
-| Optional insert | `npm test` (from memory-ci) | `7/7 checks passed` |
+| Optional insert | `npm test` (from memory-ci) | `6/6 checks passed` |
 
 Representative bridge output format (what the camera will see):
 ```
@@ -409,7 +409,7 @@ Traceability matrix:
 | R4 | OpenCode: prompt → MCP tool call → result | Real invocation. Keep prompt exactly as scripted. |
 | R5 | GitHub: failing PR check, then passing PR check | Prerecorded (needs internet). Show `saphene-review.yml` name on screen. |
 | R6 | Wi-Fi disconnect click + offline `--no-model` run | The disconnect must be real. Terminal shows `--no-model` in the typed command. |
-| R7 | (optional) `npm test` → 7/7 | 10s confidence insert for Scene 8. |
+| R7 | (optional) `npm test` → 6/6 | 10s confidence insert for Scene 8. |
 
 ### C. FILMED FOOTAGE (phone, 1080p, landscape, lock exposure/focus)
 | ID | Shot | Framing |
@@ -469,7 +469,7 @@ Play the film once. Then, on the laptop:
 2. Open `saphene-demo` in VS Code.
 3. Run: `npx tsx D:/Projects/memory-ci/src/cli.ts bridge claims/demo-claims.md --repo ./ --code-only --no-model`
 4. Show the output. Open one source citation. Explain one mismatch between memory and code — the `partial` receipt-email TODO is the easiest to narrate.
-5. Optional: `npm test` → 7/7 as the confidence close.
+5. Optional: `npm test` → 6/6 as the confidence close.
 
 GitHub Actions segment: **prerecorded** (needs internet). The offline no-model run is the one performed live. That's the final proof.
 
