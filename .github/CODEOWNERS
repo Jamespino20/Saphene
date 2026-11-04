@@ -1,0 +1,6 @@
+# Baseline ledgers and the gate itself require owner review so a PR cannot
+# silently rewrite its own evidence baseline.
+# Note: CODEOWNERS only enforces when branch protection requires owner review.
+/baselines/ @Jamespino20
+/.github/workflows/ @Jamespino20
+/src/review.ts @Jamespino20

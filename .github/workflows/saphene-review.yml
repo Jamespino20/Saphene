@@ -3,56 +3,95 @@ name: Saphene Review
 on:
   pull_request:
 
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: saphene-review-${{ github.event.number }}
+  cancel-in-progress: true
+
 jobs:
   review:
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      contents: read
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
+          cache: npm
 
       - name: Install
         run: npm ci
 
       - name: Checkout MatriFlow target (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: Jamespino20/matriflow
           ref: 1b00b467038684b27d7d7b97d74f78e033e58fa8
           path: targets/matriflow
 
       - name: Checkout AnvilOS target (pinned)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: Jamespino20/AnvilOS
           ref: 4576fe9f1727de160520be0d03fb96d906084a49
           path: targets/anvilos
 
       - name: Review MatriFlow claims
+        id: review-matriflow
+        continue-on-error: true
         shell: bash
         run: |
           set -o pipefail
           npx tsx saphene review --claims examples/matriflow-claims.md --repo targets/matriflow --ledger baselines/matriflow.ledger.json | tee review-matriflow.md
 
       - name: Review AnvilOS claims
+        id: review-anvilos
+        if: always()
+        continue-on-error: true
         shell: bash
         run: |
           set -o pipefail
           npx tsx saphene review --claims examples/anvilos-claims.md --repo targets/anvilos --ledger baselines/anvilos.ledger.json | tee review-anvilos.md
 
-      - name: Post PR comment
+      - name: Post or update PR comment (sticky)
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           {
-            'cat' review-matriflow.md 2>/dev/null
+            echo '<!-- saphene-review -->'
+            'cat' review-matriflow.md 2>/dev/null || echo '(MatriFlow review did not run)'
             echo
-            'cat' review-anvilos.md 2>/dev/null
+            'cat' review-anvilos.md 2>/dev/null || echo '(AnvilOS review did not run)'
           } > review-combined.md
-          gh pr comment ${{ github.event.number }} --body-file review-combined.md
+          existing=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.number }}/comments" --paginate \
+            --jq '.[] | select(.body | contains("<!-- saphene-review -->")) | .id' | head -n 1)
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$existing" -F body=@review-combined.md
+          else
+            gh pr comment ${{ github.event.number }} --body-file review-combined.md
+          fi
+
+      - name: Upload review artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: saphene-review
+          path: |
+            review-matriflow.md
+            review-anvilos.md
+            review-combined.md
+          if-no-files-found: ignore
+
+      - name: Gate result
+        if: always()
+        run: |
+          if [ "${{ steps.review-matriflow.outcome }}" = "failure" ] || [ "${{ steps.review-anvilos.outcome }}" = "failure" ]; then
+            echo "Saphene review gate failed (see PR comment)."
+            exit 1
+          fi
+          echo "Saphene review gate passed."
