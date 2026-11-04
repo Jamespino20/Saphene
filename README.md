@@ -4,6 +4,8 @@
 
 Saphene turns workspace memory and spec documents into a claim ledger, verifies every claim against real code with grep-verified `file:line` receipts, audits code and business flows with a panel of reviewer personas, and blocks drift — a documented claim that stops being true fails CI and blocks the PR. It runs as GitHub Actions, speaks MCP (VS Code Copilot agent mode, Cursor, Cline, OpenCode), and works on free-tier model APIs with an offline heuristic fallback.
 
+**Demo film (1:55):** https://youtu.be/t-gLcqjEDbw — conflicting AI audits, real VS Code / OpenCode / GitHub Actions runs, and a fully offline `--no-model` proof.
+
 ```
 matched ✔   partial ~   unfound ✗   — every verdict carries a receipt
 ```

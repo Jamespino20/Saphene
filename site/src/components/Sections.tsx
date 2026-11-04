@@ -11,6 +11,48 @@ const RECEIPTS = [
   ["clm_9a4f21", "deterministic claim ID", "ledger", "text-green"],
 ] as const;
 
+export function DemoVideoSection() {
+  return (
+    <section id="film" className="relative border-b border-line bg-surface py-24 overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 forensic-grid opacity-40" />
+      <div className="relative mx-auto max-w-[980px] px-6">
+        <div className="mb-10 text-center">
+          <div className="inline-flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber" />
+            <p className="mono-label text-amber">Product film · 1:55</p>
+          </div>
+          <h2 className="mt-4 font-mono text-3xl sm:text-5xl font-bold tracking-tight text-ink">
+            Memory moves faster than the repository.
+          </h2>
+          <p className="mx-auto mt-4 max-w-[620px] text-base leading-relaxed text-muted font-sans">
+            Three AI audits disagree. Saphene checks the evidence — in VS Code, OpenCode, GitHub Actions,
+            and fully offline with <code className="font-mono text-amber text-sm">--no-model</code>.
+          </p>
+        </div>
+        <div className="overflow-hidden rounded-2xl border border-line-strong bg-black shadow-2xl gem-glow-amber">
+          <div className="aspect-video w-full">
+            <iframe
+              className="h-full w-full"
+              src="https://www.youtube-nocookie.com/embed/t-gLcqjEDbw"
+              title="Saphene — CI for AI Agent Memory (Product Film)"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+          </div>
+        </div>
+        <p className="mt-5 text-center font-mono text-xs text-muted">
+          The claim is not the answer. The receipt is. ·{" "}
+          <a className="text-amber hover:underline" href="https://youtu.be/t-gLcqjEDbw" target="_blank" rel="noopener noreferrer">
+            Watch on YouTube ↗
+          </a>
+        </p>
+      </div>
+    </section>
+  );
+}
+
 export function ReceiptTicker() {
   const items = [...RECEIPTS, ...RECEIPTS];
   return (
@@ -865,16 +907,16 @@ export function RoadmapSection() {
     {
       phase: "Phase 2",
       title: "Agent Tooling & CI Gate",
-      status: "In progress",
-      statusClass: "badge-partial",
-      items: ["MCP server tools (saphene_bridge, saphene_memory, saphene_verify)", "GitHub Actions drift gate", "Multi-persona audit panel (security, performance, flow, maintainability)"],
+      status: "Shipped",
+      statusClass: "badge-matched",
+      items: ["MCP server tools (bridge, memory, verify, review, consistency, profile)", "GitHub Actions drift gate (fail-closed baselines, sticky PR comments)", "Multi-persona audit panel (security, performance, flow, maintainability)", "saphene doctor, SARIF output, suppressions, init --ci scaffolding"],
     },
     {
       phase: "Phase 3",
       title: "Cross-Repository Traceability",
-      status: "Planned",
-      statusClass: "badge-unfound",
-      items: ["Multi-repo ledger roll-up", "Semantic synonym & alias expansion", "Requirements traceability matrix export"],
+      status: "In progress",
+      statusClass: "badge-partial",
+      items: ["Cross-document consistency pass (contradictions, duplicate IDs)", "Alias & distinct-entity tables (.saphene/aliases.json)", "Deterministic scan rules + SARIF ingestion (Slither/Semgrep/Snyk)", "Multi-repo ledger roll-up"],
     },
     {
       phase: "Phase 4",
@@ -944,9 +986,12 @@ export function RoadmapSection() {
           </div>
           <div className="space-y-3 font-mono text-xs sm:text-sm">
             {[
-              { ts: "2026-11-02", text: "Site: Meta hackathon header band + roadmap section added; terminal height clamped." },
-              { ts: "2026-11-01", text: "Self-test: 7/7 deterministic checks passing against root codebase AST." },
-              { ts: "2026-10-31", text: "Memory audit: 4 ledgered claims, 1 drift resolved via schemata.json update." },
+              { ts: "2026-11-04", text: "Product film released (youtu.be/t-gLcqjEDbw); site embeds the film, GitHub buttons carry the real mark." },
+              { ts: "2026-11-04", text: "Batch 3: deterministic scan rules + SARIF ingestion; Batch 2: review MCP tool, doctor, suppressions, init --ci, Dockerfile." },
+              { ts: "2026-11-03", text: "Workflows hardened: pinned actions, pipefail gates, sticky PR comments, release + nightly drift watch." },
+              { ts: "2026-11-03", text: "Fail-closed review gate, committed baselines, portable fixtures; self-test 6/6 on a fresh clone." },
+              { ts: "2026-11-02", text: "Meta Model API primary (Muse Spark) with Google provider fallback; site + docs provider-generic." },
+              { ts: "2026-11-01", text: "Self-test: deterministic checks passing against root codebase AST." },
               { ts: "2026-10-30", text: "v0.1.0 baseline: claim extraction + verify + ledger + drift detection shipped." },
             ].map((e) => (
               <div key={e.ts} className="flex gap-3 border-b border-line/50 pb-2 last:border-0">
