@@ -6,6 +6,7 @@
 // Designed around observed 503 flakiness and provider outages.
 
 import { readFileSync, existsSync } from "node:fs";
+import { dirname } from "node:path";
 
 export interface ModelConfig {
   baseUrl: string;
@@ -23,23 +24,71 @@ export interface ChatResult {
   usage?: unknown;
 }
 
-export function loadModelConfig(envPath = ".env"): ModelConfig | null {
+function parseEnvFile(envPath: string): Record<string, string> | null {
   if (!existsSync(envPath)) return null;
   const kv: Record<string, string> = {};
   for (const line of readFileSync(envPath, "utf8").split(/\r?\n/)) {
     const m = line.match(/^\s*([A-Za-z0-9_]+)\s*=\s*(.*)\s*$/);
     if (m) kv[m[1]] = m[2];
   }
-  if (!kv.MODEL_BASE_URL || !kv.MODEL_API_KEY || !kv.MODEL_NAME) return null;
+  return kv;
+}
+
+function configFromKv(kv: Record<string, string>): ModelConfig | null {
+  const baseUrl = kv.SAPHENE_MODEL_BASE_URL || kv.MODEL_BASE_URL;
+  const apiKey = kv.SAPHENE_MODEL_API_KEY || kv.MODEL_API_KEY;
+  const model = kv.SAPHENE_MODEL_NAME || kv.MODEL_NAME;
+  if (!baseUrl || !apiKey || !model) return null;
   return {
-    baseUrl: kv.MODEL_BASE_URL.replace(/\/+$/, ""),
-    apiKey: kv.MODEL_API_KEY,
-    model: kv.MODEL_NAME,
-    fallback: kv.MODEL_FALLBACK || undefined,
-    fallbackBaseUrl: kv.MODEL_FALLBACK_BASE_URL?.replace(/\/+$/, "") || undefined,
-    fallbackApiKey: kv.MODEL_FALLBACK_API_KEY || undefined,
-    fallbackModel: kv.MODEL_FALLBACK_MODEL || undefined,
+    baseUrl: baseUrl.replace(/\/+$/, ""),
+    apiKey,
+    model,
+    fallback: kv.SAPHENE_MODEL_FALLBACK || kv.MODEL_FALLBACK || undefined,
+    fallbackBaseUrl: (kv.SAPHENE_MODEL_FALLBACK_BASE_URL || kv.MODEL_FALLBACK_BASE_URL)?.replace(/\/+$/, "") || undefined,
+    fallbackApiKey: kv.SAPHENE_MODEL_FALLBACK_API_KEY || kv.MODEL_FALLBACK_API_KEY || undefined,
+    fallbackModel: kv.SAPHENE_MODEL_FALLBACK_MODEL || kv.MODEL_FALLBACK_MODEL || undefined,
   };
+}
+
+export function resolveEnvPaths(source?: string, explicit?: string): string[] {
+  const paths: string[] = [];
+  if (explicit) paths.push(explicit);
+  if (process.env.SAPHENE_ENV) paths.push(process.env.SAPHENE_ENV);
+  paths.push(".env");
+  if (source) {
+    try {
+      const dir = dirname(source);
+      if (dir && dir !== ".") {
+        paths.push(`${dir}/.env`);
+        paths.push(`${dir}/.saphene/.env`);
+      }
+    } catch {
+      // ignore unparseable source paths
+    }
+  }
+  return [...new Set(paths)];
+}
+
+export function loadModelConfig(envPath = ".env", source?: string): ModelConfig | null {
+  // SAPHENE_MODEL_* env vars are a full config with no file needed.
+  const envOnly: Record<string, string> = {};
+  for (const k of [
+    "SAPHENE_MODEL_BASE_URL", "SAPHENE_MODEL_API_KEY", "SAPHENE_MODEL_NAME",
+    "SAPHENE_MODEL_FALLBACK", "SAPHENE_MODEL_FALLBACK_BASE_URL",
+    "SAPHENE_MODEL_FALLBACK_API_KEY", "SAPHENE_MODEL_FALLBACK_MODEL",
+  ]) {
+    if (process.env[k]) envOnly[k] = process.env[k] as string;
+  }
+  const fromEnv = configFromKv(envOnly);
+  if (fromEnv) return fromEnv;
+
+  for (const path of resolveEnvPaths(source, envPath === ".env" ? undefined : envPath)) {
+    const kv = parseEnvFile(path);
+    if (!kv) continue;
+    const cfg = configFromKv({ ...kv, ...envOnly });
+    if (cfg) return cfg;
+  }
+  return null;
 }
 
 const RETRIES_PER_MODEL = 3;

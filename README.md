@@ -22,13 +22,14 @@ matched ✔   partial ~   unfound ✗   — every verdict carries a receipt
 | Command | What it does |
 | --- | --- |
 | `saphene init` | Scaffold a memory directory (`--personal` for category folders, `--memory-dir <path>`) |
-| `saphene bridge` | Verify claims in a file against one or more repos (`--repo`, `--code-only`, `--exclude`) |
-| `saphene memory` | Audit every `.md` in a memory directory; ledger + drift diff |
+| `saphene bridge` | Verify claims in a file against one or more repos (`--repo`, `--code-only`, `--exclude`, `--env`, `--sarif`) |
+| `saphene memory` | Audit every `.md` in a memory directory; ledger + drift diff (`--env` for model config) |
+| `saphene sweep` | Whole-repo verify loop + one aggregate ledger (`--repo`, `--out`) |
 | `saphene consistency` | Check claims from multiple documents against each other for contradictions |
 | `saphene profile --config profile.json` | Config-driven mechanical checks beside claim verification (length, term budgets, quotes, n-grams) |
 | `saphene audit` | Persona-panel code & business-flow audit; timestamped markdown report with fix prompts (`--report`, `--out-dir`) |
 | `saphene review` | PR gate: diff verdicts against a committed baseline ledger |
-| `saphene mcp` | Run the MCP server (`saphene_bridge`, `saphene_memory`, `saphene_verify`, `saphene_consistency`, `saphene_profile`) |
+| `saphene mcp` | Run the MCP server (`saphene_bridge`, `saphene_memory`, `saphene_verify`, `saphene_review`, `saphene_consistency`, `saphene_profile`) |
 | `saphene drift` | Inject a drift into a file copy; report detection |
 | `saphene test` | Deterministic self-test suite, no model key needed |
 

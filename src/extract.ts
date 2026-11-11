@@ -367,6 +367,6 @@ export async function extractClaimsViaModel(
   throw lastParseError instanceof Error ? lastParseError : new Error(String(lastParseError));
 }
 
-export function getModelConfig(): ModelConfig | null {
-  return loadModelConfig();
+export function getModelConfig(envPath?: string, source?: string): ModelConfig | null {
+  return loadModelConfig(envPath, source);
 }

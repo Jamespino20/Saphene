@@ -18,12 +18,24 @@ export interface AdapterOptions {
   excludeFiles?: string[];
   codeOnly?: boolean;
   aliasTable?: AliasTable;
+  /** Explicit .env path (--env). Falls back to SAPHENE_MODEL_* env, ./.env, then source-adjacent .env. */
+  modelEnvPath?: string;
+}
+
+export interface AdapterResult {
+  claims: Claim[];
+  verdicts: Verdict[];
+  traceability: TraceabilityRow[];
+  modelUsed: boolean;
+  modelNote: string;
 }
 
 const SKIP_DIRS = new Set(["node_modules", ".git", ".saphene", "dist", ".venv", "__pycache__", ".idea", ".vscode"]);
 const SKIP_FILES = new Set(["package-lock.json", "package.json", "tsconfig.json", "tsconfig.node.json"]);
-const TEXT_EXTS = new Set([".md", ".txt", ".ts", ".tsx", ".js", ".jsx", ".json", ".php", ".sql", ".html", ".css", ".scss", ".csv", ".prisma", ".xml", ".env.example", ".htaccess"]);
-const CODE_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".cjs", ".mjs", ".py", ".rs", ".go", ".java", ".rb", ".php", ".cs"]);
+const TEXT_EXTS = new Set([".md", ".txt", ".ts", ".tsx", ".js", ".jsx", ".json", ".php", ".sql", ".html", ".css", ".scss", ".csv", ".prisma", ".xml", ".env.example", ".htaccess", ".ps1", ".psm1", ".bat", ".cmd", ".sh", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".log"]);
+// Extensionless project files that are always plain text.
+const TEXT_BASENAMES = new Set(["license", "notice", "readme", "changelog", "authors", "contributors", "dockerfile", "makefile", "gemfile", "rakefile", "vagrantfile", "procfile"]);
+const CODE_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".cjs", ".mjs", ".py", ".rs", ".go", ".java", ".rb", ".php", ".cs", ".ps1", ".psm1", ".sh"]);
 const MAX_FILE_BYTES = 512_000;
 const MAX_FILES_PER_DIR_SCAN = 2000;
 
@@ -127,10 +139,29 @@ function anchorIsNegated(hit: string): boolean {
     /\bno\s+(live|verified|provider|authorized|completed)\b/.test(text);
 }
 
+function stemWord(word: string): string {
+  if (word.length <= 4) return word;
+  return word.replace(/(ies|es|s|ed|ing)$/, (m) => (m === "ies" ? "y" : ""));
+}
+
+function isScreamingSnakeConstant(needle: string): boolean {
+  return /^[A-Z][A-Z0-9_]{2,}$/.test(stripEvidenceSyntax(needle));
+}
+
 function hitStrength(needle: string, hit: string, claimText: string): "strong" | "weak" {
   const { anchor } = parseHit(hit);
   const weak = isWeakHint(needle);
   const action = hasActionVerb(anchor) || hasActionVerb(needle);
+  // SCREAMING_SNAKE constants (O_EXCL, MAX_RETRIES): a bare flag reference is
+  // never enough to invert a negated claim. It needs a claim-stem verb in the
+  // anchor (stem-matched: overwrites ~= overwrite) or multi-token overlap.
+  if (isScreamingSnakeConstant(needle)) {
+    const claimStems = new Set(hintTokens(claimText).filter((t) => !NEGATIVE_STOP_TOKENS.has(t)).map(stemWord));
+    const anchorStems = new Set(hintTokens(anchor).map(stemWord));
+    const overlap = [...claimStems].filter((t) => anchorStems.has(t)).length;
+    if (action && overlap >= 2) return "strong";
+    return "weak";
+  }
   if (!weak && action) return "strong";
   if (!weak && /\s/.test(stripEvidenceSyntax(needle))) return "strong";
   if (!weak && /[_./\\-]/.test(needle) && anchor.toLowerCase().includes(stripEvidenceSyntax(needle).toLowerCase())) return "strong";
@@ -192,7 +223,50 @@ function grepSourceExcludingClaim(file: string, needle: string, claimText: strin
 
 function isScannable(file: string, codeOnly: boolean): boolean {
   const ext = extname(file).toLowerCase();
-  return codeOnly ? CODE_EXTS.has(ext) : TEXT_EXTS.has(ext);
+  if (codeOnly) return CODE_EXTS.has(ext);
+  if (TEXT_EXTS.has(ext)) return true;
+  if (!ext) {
+    const base = file.split(/[\\/]/).pop()?.toLowerCase() ?? "";
+    if (TEXT_BASENAMES.has(base)) return true;
+  }
+  return false;
+}
+
+/** A hint that names a file rather than file contents (e.g. LICENSE, Dockerfile, deploy.ps1). */
+function isFilenameHint(needle: string): boolean {
+  const clean = stripEvidenceSyntax(needle);
+  return clean.length >= 2 && !/\s/.test(clean) && (/[/\\]/.test(clean) || /\.[A-Za-z0-9]{1,5}$/.test(clean) || TEXT_BASENAMES.has(clean.toLowerCase()));
+}
+
+function findFileByName(dir: string, needle: string, budget: { count: number }): string | null {
+  if (budget.count <= 0) return null;
+  const want = stripEvidenceSyntax(needle).replace(/\\/g, "/").toLowerCase();
+  const base = want.split("/").pop() ?? want;
+  let entries: string[];
+  try {
+    entries = readdirSync(dir, { withFileTypes: true }).map((e) => e.name);
+  } catch {
+    return null;
+  }
+  for (const name of entries) {
+    if (budget.count <= 0) return null;
+    const full = join(dir, name);
+    let stat;
+    try {
+      stat = statSync(full);
+    } catch {
+      continue;
+    }
+    if (stat.isDirectory()) {
+      if (SKIP_DIRS.has(name)) continue;
+      const hit = findFileByName(full, needle, budget);
+      if (hit) return hit;
+    } else if (stat.isFile() && name.toLowerCase() === base) {
+      budget.count -= 1;
+      return `${full}:1: <filename present>`;
+    }
+  }
+  return null;
 }
 
 function pathInScope(path: string, scope?: string[]): boolean {
@@ -322,6 +396,17 @@ export function verifyClaim(claim: Claim, targets: string[] = [], options: Adapt
       }
       const targetHit = searchTargets(targets, variant, exclude, codeOnly, wholeWord, claim.scope);
       if (targetHit) return { hit: targetHit, fromSource: false };
+    }
+    // Filename hints (LICENSE, Dockerfile, deploy.ps1): the file's existence is the evidence.
+    if (isFilenameHint(needle)) {
+      for (const target of targets) {
+        if (!existsSync(target)) continue;
+        const stat = statSync(target);
+        if (stat.isDirectory() && pathInScope(target, claim.scope)) {
+          const hit = findFileByName(target, needle, { count: 200 });
+          if (hit) return { hit, fromSource: false };
+        }
+      }
     }
     return { hit: null, fromSource: false };
   };
@@ -464,25 +549,31 @@ export async function runAdapter(
   source: string,
   content: string,
   options: AdapterOptions = {},
-): Promise<{ claims: Claim[]; verdicts: Verdict[]; traceability: TraceabilityRow[] }> {
+): Promise<AdapterResult> {
   const targets = options.targets ?? [];
   const includeSource = options.includeSource ?? true;
   const aliasTable = options.aliasTable ?? loadAliasTables(source, targets);
   let claims = extractClaims(source, content, aliasTable);
 
+  let modelUsed = false;
+  let modelNote = "heuristic extraction (--no-model or model not requested)";
   if (options.useModel) {
-    const cfg = getModelConfig();
+    const cfg = getModelConfig(options.modelEnvPath, source);
     if (cfg) {
       try {
         claims = (await extractClaimsViaModel(source, content, cfg)).map((claim) => ({
           ...claim,
           expectedEvidence: claim.expectedEvidence.map((hint) => canonicalEntity(hint, aliasTable)),
         }));
+        modelUsed = true;
+        modelNote = `model extraction via ${cfg.model}`;
       } catch (err) {
-        console.warn(`[saphene] model extraction failed, falling back to heuristic: ${err instanceof Error ? err.message : err}`);
+        modelNote = `model extraction failed, heuristic fallback used: ${err instanceof Error ? err.message : err}`;
+        console.warn(`[saphene] ${modelNote}`);
       }
     } else {
-      console.warn("[saphene] no .env model config, using heuristic extraction");
+      modelNote = "no model config found (checked SAPHENE_MODEL_* env, explicit --env, ./.env, source-adjacent .env); heuristic extraction used";
+      console.warn(`[saphene] ${modelNote}`);
     }
   }
 
@@ -511,5 +602,5 @@ export async function runAdapter(
       };
     });
 
-  return { claims, verdicts, traceability };
+  return { claims, verdicts, traceability, modelUsed, modelNote };
 }

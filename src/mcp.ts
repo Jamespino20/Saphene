@@ -35,7 +35,7 @@ async function summarize(
   includeSource: boolean,
   codeOnly = false,
 ) {
-  const { claims, verdicts, traceability } = await runAdapter("paper", file, content, {
+  const { claims, verdicts, traceability, modelUsed, modelNote } = await runAdapter("paper", file, content, {
     useModel,
     targets: repoDir ? [repoDir] : [],
     includeSource,
@@ -66,6 +66,8 @@ async function summarize(
     mismatch: verdictsOut.filter((v) => v.status === "mismatch").length,
     unfound: verdictsOut.filter((v) => v.status === "unfound").length,
     unverified: verdictsOut.filter((v) => v.status === "unverified").length,
+    model: modelUsed,
+    modelNote,
     verdicts: verdictsOut,
     traceability,
   };
@@ -173,14 +175,18 @@ server.registerTool(
     const entries: LedgerEntry[] = [];
     let extractedClaims = 0;
     let noHintClaims = 0;
+    let modelUsedAny = false;
+    const modelNotes: string[] = [];
     for (const file of files) {
       const content = readFileSync(file, "utf8");
-      const { claims, verdicts } = await runAdapter("memory", file, content, {
+      const { claims, verdicts, modelUsed, modelNote } = await runAdapter("memory", file, content, {
         useModel: useModel ?? false,
         targets: [repoDir],
         includeSource: false,
         codeOnly: codeOnly ?? false,
       });
+      if (modelUsed) modelUsedAny = true;
+      if (modelNote && !modelNotes.includes(modelNote)) modelNotes.push(modelNote);
       extractedClaims += claims.length;
       noHintClaims += claims.filter((c) => c.expectedEvidence.length === 0).length;
       for (const v of verdicts) {
@@ -212,6 +218,8 @@ server.registerTool(
       scanSkipped: scan.skipped,
       extractedClaims,
       noHintClaims,
+      model: modelUsedAny,
+      modelNote: modelNotes.join(" | ") || undefined,
       total: entries.length,
       ledgerPath,
       ledgerWritten: true,
@@ -350,6 +358,8 @@ server.registerTool(
               unfound: entries.filter((e) => e.status === "unfound").length,
               mismatch: entries.filter((e) => e.status === "mismatch").length,
               gate: active.length > 0 ? "fail" : "pass",
+              model: false,
+              modelNote: "review is deterministic (heuristic extraction only)",
               drift: active.map((d) => ({ from: d.from, to: d.entry.status, text: d.entry.text, citation: d.entry.citation })),
               suppressed: suppressed.map((d) => ({
                 text: d.entry.text,

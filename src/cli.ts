@@ -13,6 +13,7 @@ import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync } from "no
 import { join, basename } from "node:path";
 import { type TraceabilityRow } from "./schema.js";
 import { checkConsistency } from "./consistency.js";
+import { loadSuppressions, matchSuppression } from "./suppressions.js";
 import { scanRepo } from "./scan.js";
 import { ingestSarif } from "./ingest.js";
 import { chat, loadModelConfig } from "./model.js";
@@ -20,7 +21,7 @@ import { loadMechanicalProfile, runMechanicalProfile } from "./profile.js";
 import { loadAliasTableFromFile, loadAliasTables, mergeAliasTables } from "./aliases.js";
 
 const args = process.argv.slice(2);
-const KNOWN_COMMANDS = ["init", "verify", "bridge", "memory", "consistency", "profile", "doctor", "scan", "ingest", "help", "guide"] as const;
+const KNOWN_COMMANDS = ["init", "verify", "bridge", "memory", "consistency", "profile", "doctor", "scan", "ingest", "review", "sweep", "help", "guide"] as const;
 const firstPositional = args[0];
 const command = (KNOWN_COMMANDS as readonly string[]).includes(firstPositional)
   ? firstPositional
@@ -38,6 +39,8 @@ for (let i = 0; i < args.length; i++) {
 const noModel = args.includes("--no-model");
 const outIdx = args.indexOf("--out");
 const outPath = outIdx !== -1 ? args[outIdx + 1] : undefined;
+const envIdx = args.indexOf("--env");
+const envPath = envIdx !== -1 ? args[envIdx + 1] : undefined;
 const sarifIdx = args.indexOf("--sarif");
 const sarifPath = sarifIdx !== -1 ? args[sarifIdx + 1] : undefined;
 
@@ -120,15 +123,15 @@ const GUIDES: Record<string, CommandGuide> = {
   verify: {
     summary: "Verify one file against itself (memory) or a repository (paper).",
     usage: ["saphene verify <file> [memory|paper|helm] [--repo <dir>] [--paper <file>] [--no-model]"],
-    flags: [["memory|paper|helm", "memory = other lines in the same file are evidence; paper = repo/docs are evidence and the source never testifies for itself"], ["--repo <dir>", "paper-mode evidence repository"], ["--paper <file>", "paper-mode evidence document"], ["--code-only", "only code files count as evidence in paper mode"], ["--no-model", "offline heuristic extraction — no API key, deterministic"]],
+    flags: [["memory|paper|helm", "memory = other lines in the same file are evidence; paper = repo/docs are evidence and the source never testifies for itself"], ["--repo <dir>", "paper-mode evidence repository"], ["--paper <file>", "paper-mode evidence document"], ["--code-only", "only code files count as evidence in paper mode"], ["--no-model", "offline heuristic extraction — no API key, deterministic"], ["--env <file>", "model .env path (default: SAPHENE_MODEL_* env, ./.env, source-adjacent .env)"]],
     examples: ["saphene verify README.md memory --no-model", "saphene verify README.md paper --repo ./app --no-model"],
     exits: [["0", "all claims matched"], ["1", "any claim unfound or mismatch — human review"]],
     seeAlso: "bridge (structured claims file), memory (whole directory), claims (hint syntax)",
   },
   bridge: {
     summary: "Verify a structured claims/SRS file against one or more target repositories.",
-    usage: ["saphene bridge <claims-file> [--repo <dir>] [--paper <file>] [--code-only] [--no-model] [--out <file>]"],
-    flags: [["--repo <dir>", "repeatable: repository to search for evidence"], ["--paper <file>", "repeatable: document to search"], ["--code-only", "code files count as evidence; prose and claims files do not (prevents self-testimony)"], ["--no-model", "offline heuristic extraction"], ["--out <file>", ".json writes a ledger baseline; anything else writes a markdown matrix"], ["--sarif <file>", "write SARIF 2.1.0 results for unfound/mismatch/partial verdicts"]],
+    usage: ["saphene bridge <claims-file> [--repo <dir>] [--paper <file>] [--code-only] [--no-model] [--env <file>] [--out <file>]"],
+    flags: [["--repo <dir>", "repeatable: repository to search for evidence"], ["--paper <file>", "repeatable: document to search"], ["--code-only", "code files count as evidence; prose and claims files do not (prevents self-testimony)"], ["--no-model", "offline heuristic extraction"], ["--env <file>", "model .env path (default: SAPHENE_MODEL_* env, ./.env, source-adjacent .env)"], ["--out <file>", ".json writes a ledger baseline; anything else writes a markdown matrix"], ["--sarif <file>", "write SARIF 2.1.0 results for unfound/mismatch/partial verdicts"]],
     examples: ["saphene bridge claims.md --repo ./app --code-only --no-model", "saphene bridge claims.md --repo ./app --out .saphene/baseline.json"],
     exits: [["0", "all claims matched"], ["1", "any claim unfound or mismatch — human review"]],
     seeAlso: "verify, review",
@@ -165,9 +168,25 @@ const GUIDES: Record<string, CommandGuide> = {
     exits: [["0", "report ingested"]],
     seeAlso: "scan, review",
   },
+  review: {
+    summary: "PR gate: diff verdicts against a committed evidence baseline ledger. Fails closed without one.",
+    usage: ["saphene review --claims <file> --repo <dir> --ledger <path> [--code-only] [--update-ledger] [--env <file>]"],
+    flags: [["--claims <file>", "claims file to verify"], ["--repo <dir>", "repository under review"], ["--ledger <path>", "committed JSON baseline (missing/corrupt = exit 2, fail closed)"], ["--code-only", "required when the claims file lives inside the repo (prevents self-testimony)"], ["--update-ledger", "explicitly create/overwrite the baseline"], ["--env <file>", "model .env path (default: SAPHENE_MODEL_* env, ./.env, source-adjacent .env)"]],
+    examples: ["saphene review --claims claims.md --repo ./ --code-only --ledger baselines/claims.ledger.json"],
+    exits: [["0", "no drift"], ["1", "active drift (suppressions excluded)"], ["2", "missing/corrupt baseline — fail closed"]],
+    seeAlso: "bridge, sweep",
+  },
+  sweep: {
+    summary: "Whole-repo verify loop: verify every .md in a repo against the repo and write one aggregate ledger.",
+    usage: ["saphene sweep [--repo <dir>] [--out <ledger.json>] [--code-only | --include-prose] [--no-model] [--env <file>]"],
+    flags: [["--repo <dir>", "repository to sweep (default .)"], ["--out <file>", "aggregate ledger to write (default ./.saphene/sweep.ledger.json)"], ["--code-only", "code files count as evidence (default on for sweep)"], ["--include-prose", "also count docs as evidence"], ["--no-model", "offline heuristic extraction"], ["--env <file>", "model .env path (default: SAPHENE_MODEL_* env, ./.env, source-adjacent .env)"]],
+    examples: ["saphene sweep --repo ./app --out .saphene/sweep.ledger.json"],
+    exits: [["0", "no unfound/mismatch"], ["1", "unfound or mismatch present"]],
+    seeAlso: "bridge, memory, review",
+  },
   doctor: {
     summary: "Check runtime, model configuration, workspace, and ledger health.",
-    usage: ["saphene doctor [--call]"],
+    usage: ["saphene doctor [--call] [--env <file>]"],
     flags: [["--call", "make one cheap model completion to prove the configured endpoint answers"]],
     examples: ["saphene doctor", "saphene doctor --call"],
     exits: [["0", "environment healthy (model optional)"], ["2", "runtime too old, or --call failed"]],
@@ -175,8 +194,8 @@ const GUIDES: Record<string, CommandGuide> = {
   },
   memory: {
     summary: "Audit every .md in a memory directory, write <memory-dir>/.saphene/ledger.json, and diff against the last run.",
-    usage: ["saphene memory [--memory-dir <dir>] [--repo <dir>] [--paper <file>] [--no-model]"],
-    flags: [["--memory-dir <dir>", "memory root (default ./memory)"], ["--repo <dir>", "repeatable: evidence target"], ["--code-only", "only code files count as evidence"], ["--no-model", "offline heuristics; structured blocks win, otherwise factual prose with inferable identifiers becomes claims"]],
+    usage: ["saphene memory [--memory-dir <dir>] [--repo <dir>] [--paper <file>] [--no-model] [--env <file>]"],
+    flags: [["--memory-dir <dir>", "memory root (default ./memory)"], ["--repo <dir>", "repeatable: evidence target"], ["--code-only", "only code files count as evidence"], ["--no-model", "offline heuristics; structured blocks win, otherwise factual prose with inferable identifiers becomes claims"], ["--env <file>", "model .env path (default: SAPHENE_MODEL_* env, ./.env, source-adjacent .env)"]],
     examples: ["saphene memory --memory-dir ./memory --repo ./app --no-model"],
     exits: [["0", "no drift"], ["1", "drift detected, or any claim unfound/mismatch"]],
     seeAlso: "init, verify, consistency (docs against each other)",
@@ -208,14 +227,6 @@ const STANDALONE_GUIDES: Record<string, CommandGuide> = {
     exits: [["0", "n/a"], ["1", "n/a"]],
     seeAlso: "bridge, verify, consistency",
   },
-  review: {
-    summary: "PR gate: diff verdicts against a committed evidence baseline ledger.",
-    usage: ["saphene review --claims <file> --repo <dir> --ledger <path> [--code-only] [--update-ledger]"],
-    flags: [["--claims <file>", "claims file to verify"], ["--repo <dir>", "repository under review"], ["--ledger <path>", "committed JSON baseline"], ["--code-only", "required when the claims file lives inside the repo (prevents self-testimony)"], ["--update-ledger", "overwrite the baseline with this run"]],
-    examples: ["saphene review --claims claims.md --repo ./ --code-only --ledger .saphene/baseline.json"],
-    exits: [["0", "no drift"], ["1", "drift detected"]],
-    seeAlso: "bridge",
-  },
   audit: {
     summary: "Persona-panel code and business-flow audit; timestamped markdown report.",
     usage: ["saphene audit --repo <dir> [--focus all|security|performance|flow] [--max-files N|0] [--all] [--update-ledger]"],
@@ -241,11 +252,11 @@ const STANDALONE_GUIDES: Record<string, CommandGuide> = {
     seeAlso: "review",
   },
   test: {
-    summary: "6-check deterministic self-test suite. No model key needed.",
+    summary: "7-check deterministic self-test suite. No model key needed.",
     usage: ["saphene test"],
     flags: [],
     examples: ["saphene test"],
-    exits: [["0", "6/6 checks passed"], ["1", "one or more checks failed"]],
+    exits: [["0", "7/7 checks passed"], ["1", "one or more checks failed"]],
     seeAlso: "verify, bridge",
   },
 };
@@ -418,7 +429,7 @@ async function main(): Promise<number> {
     const guideMissing = [...KNOWN_COMMANDS, ...Object.keys(STANDALONE_GUIDES)].filter((c) => !ALL_GUIDES[c]?.examples?.length);
     console.log(`guide coverage ${guideMissing.length === 0 ? "✓ complete" : `✗ missing ${guideMissing.join(", ")}`}`);
     if (guideMissing.length > 0) failures++;
-    const cfg = loadModelConfig();
+    const cfg = loadModelConfig(envPath);
     if (cfg) {
       console.log(`model ${cfg.model} @ ${cfg.baseUrl}${cfg.fallbackBaseUrl ? " (+ provider fallback)" : ""}`);
       if (args.includes("--call")) {
@@ -570,7 +581,9 @@ async function main(): Promise<number> {
         args[i - 1] !== "--paper" &&
         args[i - 1] !== "--out" &&
         args[i - 1] !== "--memory-dir" &&
-        args[i - 1] !== "--exclude",
+        args[i - 1] !== "--exclude" &&
+        args[i - 1] !== "--env" &&
+        args[i - 1] !== "--sarif",
     );
     const file = positional[0];
     if (!file || !existsSync(file)) {
@@ -592,13 +605,15 @@ async function main(): Promise<number> {
     console.log(`Saphene bridge — ${file}`);
     console.log(`Targets: ${targets.length ? targets.join(", ") : "(none)"}`);
 
-    const { claims, verdicts, traceability } = await runAdapter("paper", file, content, {
+    const { claims, verdicts, traceability, modelUsed, modelNote } = await runAdapter("paper", file, content, {
       useModel: !noModel,
       targets,
       includeSource: false,
       excludeFiles: excludes,
       codeOnly,
+      modelEnvPath: envPath,
     });
+    console.log(`  model: ${modelUsed ? "on" : "off"} (${modelNote})`);
 
     const summary = printSummary(claims, verdicts);
 
@@ -748,6 +763,7 @@ async function main(): Promise<number> {
         targets,
         includeSource: false,
         codeOnly,
+        modelEnvPath: envPath,
       });
       done += 1;
       drawProgress(done, files.length, basename(file));
@@ -834,6 +850,207 @@ async function main(): Promise<number> {
     return diff.drifted.length > 0 || byStatus("unfound") + byStatus("mismatch") > 0 ? 1 : 0;
   }
 
+  if (command === "review") {
+    const flagValue = (flag: string): string | undefined => {
+      const i = args.indexOf(flag);
+      return i !== -1 ? args[i + 1] : undefined;
+    };
+    const claimsFile = flagValue("--claims");
+    const repoDir = flagValue("--repo");
+    const ledgerPath = flagValue("--ledger");
+    const updateLedger = args.includes("--update-ledger");
+    const reviewCodeOnly = args.includes("--code-only");
+    if (!claimsFile || !repoDir || !ledgerPath) {
+      console.error("Usage: saphene review --claims <file> --repo <dir> --ledger <path> [--code-only] [--update-ledger] [--env <file>]");
+      return 1;
+    }
+    if (!existsSync(claimsFile)) { console.error(`Claims file not found: ${claimsFile} (check the path)`); return 1; }
+    if (!existsSync(repoDir)) { console.error(`Repo not found: ${repoDir} (check the path)`); return 1; }
+
+    const ledgerExists = existsSync(ledgerPath);
+    const prev: Ledger | null = loadLedger(ledgerPath);
+    if (ledgerExists && !prev) {
+      console.error(`Baseline ledger is corrupt or invalid: ${ledgerPath}`);
+      console.error("Failing closed: repair or replace the baseline; do not let a corrupt baseline pass as 'no drift'.");
+      return 2;
+    }
+    if (!ledgerExists && !updateLedger) {
+      console.error(`Baseline ledger not found: ${ledgerPath}`);
+      console.error("Failing closed: a PR gate must compare against a committed baseline. Create one explicitly with --update-ledger, then commit it.");
+      return 2;
+    }
+    const content = readFileSync(claimsFile, "utf8");
+
+    const { claims, verdicts, modelUsed, modelNote } = await runAdapter("paper", claimsFile, content, {
+      useModel: !noModel,
+      targets: [repoDir],
+      includeSource: false,
+      codeOnly: reviewCodeOnly,
+      modelEnvPath: envPath,
+    });
+    console.log(`  model: ${modelUsed ? "on" : "off"} (${modelNote})`);
+
+    const entries: LedgerEntry[] = claims
+      .filter((c) => c.expectedEvidence.length > 0)
+      .map((c) => {
+        const v = verdicts.find((x) => x.claimId === c.id)!;
+        return {
+          claimId: c.id,
+          text: c.text,
+          source: claimsFile,
+          status: v.status,
+          citation: v.citation,
+          anchor: v.anchor,
+          location: v.location,
+          verifiedAt: new Date().toISOString(),
+        };
+      });
+
+    const diff = diffLedger(prev, entries);
+    const suppressions = loadSuppressions(repoDir);
+    const suppressedDrift = diff.drifted.filter((d) => matchSuppression(d.entry, suppressions));
+    const activeDrift = diff.drifted.filter((d) => !matchSuppression(d.entry, suppressions));
+
+    if (updateLedger) {
+      const ledger: Ledger = {
+        version: 1,
+        lastRunAt: new Date().toISOString(),
+        entries: Object.fromEntries(entries.map((e) => [e.claimId, e])),
+      };
+      saveLedger(ledgerPath, ledger);
+    }
+
+    const driftFor = (id: string) => diff.drifted.find((d) => d.entry.claimId === id);
+    const addedIds = new Set(diff.added.map((a) => a.claimId));
+    const resolvedIds = new Set(diff.resolved.map((r) => r.entry.claimId));
+    const relocatedIds = new Set(diff.relocated.map((r) => r.entry.claimId));
+
+    const lines: string[] = [
+      "## Saphene Review",
+      "",
+      `**${basename(claimsFile)}** vs \`${repoDir}\` — ${entries.length} claims: ` +
+        `${entries.filter((e) => e.status === "matched").length} matched, ` +
+        `${entries.filter((e) => e.status === "partial").length} partial, ` +
+        `${entries.filter((e) => e.status === "unfound").length} unfound, ` +
+        `${entries.filter((e) => e.status === "mismatch").length} mismatch`,
+      "",
+      activeDrift.length > 0
+        ? `### ⚠ Drift detected — this PR breaks ${activeDrift.length} verified claim(s)`
+        : suppressedDrift.length > 0
+          ? `### ✔ No active drift — ${suppressedDrift.length} drifted claim(s) suppressed (see below)`
+          : "### ✔ No drift — all previously-verified claims still hold",
+      "",
+      "| Claim | Verdict | Δ vs base | ID | Anchor | Citation |",
+      "| ----- | ------- | --------- | -- | ------ | -------- |",
+    ];
+
+    const localIdByClaim = new Map(claims.map((c) => [c.id, c.localId ?? c.srsClause ?? "-"]));
+    for (const e of entries) {
+      const delta = driftFor(e.claimId)
+        ? `\`${driftFor(e.claimId)!.from}\` → \`${e.status}\` ⚠`
+        : addedIds.has(e.claimId)
+          ? "new"
+          : resolvedIds.has(e.claimId)
+            ? `\`${diff.resolved.find((r) => r.entry.claimId === e.claimId)!.from}\` → \`${e.status}\``
+            : relocatedIds.has(e.claimId)
+              ? "relocated (same anchor)"
+              : "";
+      lines.push(`| ${e.text.slice(0, 80)} | ${e.status} | ${delta} | ${localIdByClaim.get(e.claimId) ?? "-"} | ${(e.anchor ?? "-").slice(0, 70)} | ${e.citation.slice(0, 90)} |`);
+    }
+
+    if (activeDrift.length > 0) {
+      lines.push("", "Broken claims require either a code fix or an explicit memory update in the same PR.");
+    }
+    if (suppressedDrift.length > 0) {
+      lines.push("", `Suppressed drift (${suppressedDrift.length}, .saphene/suppressions.json):`);
+      for (const d of suppressedDrift) {
+        const s = matchSuppression(d.entry, suppressions);
+        lines.push(`- ${d.entry.text.slice(0, 80)} — ${s?.reason ?? "suppressed"}${s?.expires ? ` (expires ${s.expires})` : ""}`);
+      }
+    }
+
+    console.log(lines.join("\n"));
+    return activeDrift.length > 0 ? 1 : 0;
+  }
+
+  if (command === "sweep") {
+    const sweepRepoIdx = args.indexOf("--repo");
+    let sweepRepo = sweepRepoIdx !== -1 ? args[sweepRepoIdx + 1] : undefined;
+    if (!sweepRepo) {
+      for (let i = 0; i < args.length; i++) {
+        const a = args[i];
+        if (!a.startsWith("--") && a !== "sweep" && !["--out", "--env"].includes(args[i - 1])) {
+          sweepRepo = a;
+          break;
+        }
+      }
+      sweepRepo ??= ".";
+    }
+    if (!existsSync(sweepRepo)) {
+      console.error(`Repository not found: ${sweepRepo} (check the path)`);
+      return 1;
+    }
+    const sweepCodeOnly = !args.includes("--include-prose");
+    const sweepOut = outPath ?? join(process.cwd(), ".saphene", "sweep.ledger.json");
+    const sweepFiles = scanMemoryFiles(sweepRepo);
+    if (sweepFiles.length === 0) {
+      console.error(`No .md files found in ${sweepRepo}`);
+      return 1;
+    }
+    console.log(`Saphene sweep — ${sweepRepo}`);
+    console.log(`Documents: ${sweepFiles.length} | Evidence: ${sweepCodeOnly ? "code only" : "code + prose"}`);
+
+    const entries: LedgerEntry[] = [];
+    let skipped = 0;
+    let done = 0;
+    for (const file of sweepFiles) {
+      const content = readFileSync(file, "utf8");
+      const { claims, verdicts } = await runAdapter("paper", file, content, {
+        useModel: !noModel,
+        targets: [sweepRepo],
+        includeSource: false,
+        codeOnly: sweepCodeOnly,
+        modelEnvPath: envPath,
+      });
+      done += 1;
+      drawProgress(done, sweepFiles.length, basename(file));
+      for (const v of verdicts) {
+        const c = claims.find((x) => x.id === v.claimId);
+        if (!c || c.expectedEvidence.length === 0) {
+          skipped += 1;
+          continue;
+        }
+        entries.push({
+          claimId: c.id,
+          text: c.text,
+          source: file,
+          status: v.status,
+          citation: v.citation,
+          anchor: v.anchor,
+          location: v.location,
+          verifiedAt: new Date().toISOString(),
+        });
+      }
+      if (!noModel) await sleep(2000);
+    }
+    endProgress();
+
+    const sweepLedger: Ledger = {
+      version: 1,
+      lastRunAt: new Date().toISOString(),
+      entries: Object.fromEntries(entries.map((e) => [e.claimId, e])),
+    };
+    saveLedger(sweepOut, sweepLedger);
+    const byStatus = (s: string) => entries.filter((e) => e.status === s).length;
+    console.log(
+      `  ${entries.length} ledgered claims | ${byStatus("matched")} matched | ${byStatus("partial")} partial | ` +
+        `${byStatus("unfound")} unfound | ${byStatus("mismatch")} mismatch` +
+        (skipped > 0 ? ` | ${skipped} unledgered (no evidence hints)` : ""),
+    );
+    console.log(`Ledger saved: ${sweepOut}`);
+    return byStatus("unfound") + byStatus("mismatch") > 0 ? 1 : 0;
+  }
+
   if (command !== "verify" || !args.some((a) => !a.startsWith("--") && a !== "verify")) {
     return usage();
   }
@@ -842,7 +1059,7 @@ async function main(): Promise<number> {
     (a, i) =>
       !a.startsWith("--") &&
       a !== "verify" &&
-      !["--memory-dir", "--out", "--repo", "--paper"].includes(args[i - 1]),
+      !["--memory-dir", "--out", "--repo", "--paper", "--env", "--sarif"].includes(args[i - 1]),
   );
   const [file, adapter = "memory"] = positional;
 
@@ -870,12 +1087,14 @@ async function main(): Promise<number> {
 
   const content = readFileSync(file, "utf8");
   console.log(`Memory dir: ${memoryDir ?? "<cwd>/memory"}`);
-  const { claims, verdicts } = await runAdapter(adapter as "memory" | "paper" | "helm", file, content, {
+  const { claims, verdicts, modelUsed, modelNote } = await runAdapter(adapter as "memory" | "paper" | "helm", file, content, {
     useModel: !noModel,
     targets,
     includeSource: adapter === "memory",
     codeOnly: args.includes("--code-only"),
+    modelEnvPath: envPath,
   });
+  console.log(`  model: ${modelUsed ? "on" : "off"} (${modelNote})`);
 
   console.log(`Saphene verify (${adapter}) — ${file}`);
   const summary = printSummary(claims, verdicts);
